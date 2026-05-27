@@ -1,0 +1,14 @@
+{
+  "build": [
+    {
+      "label": "web",
+      "command": "npm",
+      "args": ["run", "build"]
+    },
+    {
+      "label": "report",
+      "command": "tectonic",
+      "args": ["latex/reporte.tex"]
+    }
+  ]
+}

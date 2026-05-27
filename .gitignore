@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.playwright-cli/
+*.log
+*.pdf
+.DS_Store
+latex/*.aux
+latex/*.log
+latex/*.out
+latex/*.toc
+latex/*.synctex.gz
