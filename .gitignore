@@ -9,3 +9,4 @@ latex/*.log
 latex/*.out
 latex/*.toc
 latex/*.synctex.gz
+.vercel
