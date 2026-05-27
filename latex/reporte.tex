@@ -117,6 +117,26 @@ Para 24ICE04, el proyecto identifica un problema de ingeniería concreto: el cos
 
 Para 24ICE05, el proyecto crea y aplica una herramienta moderna de ingeniería y TI. La selección de Vite, React, TypeScript y procesamiento en navegador se justifica porque permite publicar la solución en la web y evitar que imágenes pesadas lleguen al servidor antes de transformarse. Las limitaciones técnicas también se reconocen: JPEG no conserva transparencia, la compatibilidad de formatos depende del navegador y PSNR no garantiza por sí solo que un LLM interprete igual la imagen comprimida.
 
+\begin{table}[H]
+\centering
+\small
+\caption{Matriz de cumplimiento de la rúbrica.}
+\begin{tabular}{p{0.22\linewidth} p{0.66\linewidth}}
+\toprule
+Criterio & Evidencia en el proyecto\\
+\midrule
+Problema y relevancia & Se define el costo de subir imágenes crudas a un chat LLM y se justifica por ancho de banda, memoria, base64 y contexto.\\
+Preguntas de investigación & Se plantean preguntas sobre ahorro, expansión base64 y pérdida numérica por compresión.\\
+Método DSP & Se aplica remuestreo espacial, luminancia opcional, cuantización JPEG, MSE y PSNR.\\
+Diseño experimental & Los parámetros controlables son calidad JPEG, dimensión máxima y luminancia; las respuestas medidas son bytes, PSNR, MSE y contexto estimado.\\
+Análisis de datos & La interfaz y el reporte muestran bytes originales, bytes JPG, ahorro, relación de compresión, base64 evitado y PSNR.\\
+Herramienta moderna & Se creó una app web con Vite, React, TypeScript y Tailwind, desplegada en Vercel y versionada en GitHub.\\
+Limitaciones & Se documenta que JPEG no conserva transparencia, la compatibilidad depende del navegador y PSNR no sustituye validación semántica con un LLM real.\\
+Mejoras & Se proponen OCR, SSIM y pruebas con modelos multimodales reales.\\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Conclusión}
 El prototipo demuestra que las técnicas de procesamiento digital de señales pueden aplicarse directamente a una necesidad actual de aplicaciones con IA. El sistema adquiere señales visuales reales, las transforma mediante remuestreo y codificación JPEG, analiza su error y cuantifica el ahorro de recursos. La configuración inicial recomendada es dimensión máxima de 1280 px y calidad JPEG entre 70\% y 80\%, porque en la prueba realizada produjo una reducción superior al 80\% con PSNR aceptable para contexto visual general.
 

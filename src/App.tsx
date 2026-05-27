@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
-import { BarChart3, CheckCircle2, Download, FileImage, ImagePlus, Loader2, RefreshCcw, SlidersHorizontal, Trash2, UploadCloud } from 'lucide-react';
+import { Download, FileImage, ImagePlus, Loader2, RefreshCcw, Trash2, Upload } from 'lucide-react';
+import { DataRow, MetricCell, Panel, PrimaryAction, RangeField, SectionHeader, SwitchField, ToolbarButton } from './design-system';
 import { formatBytes, type ByteMetrics } from './metrics';
 import { processImageFile, type ProcessedImage, type ProcessingOptions } from './imageProcessing';
 
@@ -79,193 +80,189 @@ export function App() {
   }
 
   return (
-    <main className="min-h-screen bg-chat-bg text-chat-text">
-      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[300px_1fr]">
-        <aside className="border-b border-chat-border bg-chat-sidebar p-4 lg:border-b-0 lg:border-r">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-chat-border bg-chat-elevated">
-              <FileImage className="h-5 w-5 text-chat-accent" />
+    <main className="h-dvh overflow-hidden bg-background text-foreground">
+      <div className="mx-auto grid h-full max-w-7xl grid-rows-[56px_1fr]">
+        <header className="flex items-center justify-between border-b border-border px-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="grid h-8 w-8 place-items-center bg-foreground text-background">
+              <FileImage className="h-4 w-4" />
             </div>
-            <div>
-              <p className="text-sm font-semibold">Image Context Transformer</p>
-              <p className="text-xs text-chat-tertiary">Proyecto Final PDS</p>
+            <div className="min-w-0 max-w-[240px] sm:max-w-none">
+              <p className="truncate text-sm font-semibold">Transformador de imagenes para contexto LLM</p>
+              <p className="truncate text-xs text-muted-foreground">Procesamiento Digital de Senales · Proyecto final</p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+              <ToolbarButton title="Reiniciar parametros" aria-label="Reiniciar parametros" onClick={() => setOptions(defaultOptions)}>
+                <RefreshCcw className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton title="Limpiar imagenes" aria-label="Limpiar imagenes" onClick={clearItems} disabled={items.length === 0}>
+                <Trash2 className="h-4 w-4" />
+              </ToolbarButton>
+          </div>
+        </header>
 
-          <section className="mt-6 space-y-5">
-            <div>
-              <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                <SlidersHorizontal className="h-4 w-4 text-chat-muted" />
-                Parametros DSP
-              </div>
-              <label className="block text-xs text-chat-muted" htmlFor="quality">
-                Calidad JPEG: {Math.round(options.quality * 100)}%
-              </label>
-              <input
-                id="quality"
-                className="mt-2 w-full accent-chat-accent"
-                type="range"
+        <div className="grid min-h-0 grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <aside className="order-2 min-h-0 overflow-y-auto border-t border-border bg-[#f5f5f7] p-4 lg:order-1 lg:border-r lg:border-t-0">
+            <SectionHeader>Configuracion</SectionHeader>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">Estos controles cambian el experimento. Si no sabes que mover, deja los valores recomendados.</p>
+            <div className="mt-4 space-y-5">
+              <RangeField
+                label="Calidad JPEG"
+                valueLabel={`${Math.round(options.quality * 100)}%`}
                 min="0.35"
                 max="0.95"
                 step="0.01"
                 value={options.quality}
-                onChange={(event) => setOptions((current) => ({ ...current, quality: Number(event.target.value) }))}
+                onChange={(event) => setOptions((current) => ({ ...current, quality: Number(event.currentTarget.value) }))}
               />
-            </div>
-
-            <div>
-              <label className="block text-xs text-chat-muted" htmlFor="maxDimension">
-                Dimension maxima: {options.maxDimension}px
-              </label>
-              <input
-                id="maxDimension"
-                className="mt-2 w-full accent-chat-accent"
-                type="range"
+              <RangeField
+                label="Dimension maxima"
+                valueLabel={`${options.maxDimension}px`}
                 min="512"
                 max="2400"
                 step="64"
                 value={options.maxDimension}
-                onChange={(event) => setOptions((current) => ({ ...current, maxDimension: Number(event.target.value) }))}
+                onChange={(event) => setOptions((current) => ({ ...current, maxDimension: Number(event.currentTarget.value) }))}
               />
+              <SwitchField label="Convertir a luminancia" checked={options.grayscale} onChange={(checked) => setOptions((current) => ({ ...current, grayscale: checked }))} />
             </div>
 
-            <label className="flex cursor-pointer items-center justify-between rounded-lg border border-chat-border bg-chat-elevated px-3 py-2 text-sm">
-              <span>Transformada a luminancia</span>
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-chat-accent"
-                checked={options.grayscale}
-                onChange={(event) => setOptions((current) => ({ ...current, grayscale: event.target.checked }))}
-              />
-            </label>
+          <SectionHeader className="mt-8">Resultado total</SectionHeader>
+            <Panel className="mt-4 grid grid-cols-2">
+              <MetricCell label="Original" value={formatBytes(totals.originalBytes)} />
+              <MetricCell label="JPG" value={formatBytes(totals.compressedBytes)} />
+              <MetricCell label="Ahorro" value={`${totals.savedPercent.toFixed(1)}%`} />
+              <MetricCell label="Contexto" value={`${totals.estimatedContextUnitsSaved.toLocaleString()} u.`} />
+            </Panel>
+
+            <Panel className="mt-4 divide-y divide-border">
+              <DataRow label="Compresion" value={totals.compressionRatio ? `${totals.compressionRatio.toFixed(2)}x` : '0x'} />
+              <DataRow label="Base64 evitado" value={formatBytes(Math.max(0, totals.originalBase64Bytes - totals.compressedBase64Bytes))} />
+              <DataRow label="Archivos listos" value={String(items.length)} />
+            </Panel>
+          </aside>
+
+          <section className="order-1 min-h-0 overflow-y-auto p-4 lg:order-2">
+            <div className="mx-auto flex min-h-full max-w-5xl flex-col gap-5">
+              <Story onFiles={handleFiles} inputRef={inputRef} isProcessing={isProcessing} />
+              {error ? <div className="border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div> : null}
+              <ImageResults items={items} onDownload={downloadItem} />
+              <ComplianceSummary />
+            </div>
           </section>
-
-          <section className="mt-6 grid grid-cols-2 gap-2">
-            <Metric label="Original" value={formatBytes(totals.originalBytes)} />
-            <Metric label="Salida JPG" value={formatBytes(totals.compressedBytes)} />
-            <Metric label="Ahorro" value={`${totals.savedPercent.toFixed(1)}%`} />
-            <Metric label="Contexto" value={`${totals.estimatedContextUnitsSaved.toLocaleString()} u.`} />
-          </section>
-        </aside>
-
-        <section className="flex min-h-0 flex-col">
-          <header className="border-b border-chat-border px-4 py-3">
-            <div className="mx-auto flex max-w-6xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h1 className="text-xl font-semibold tracking-normal">Compresor JPG previo a servidor</h1>
-                <p className="text-sm text-chat-muted">
-                  Convierte formatos comunes a JPG, remuestrea la senal visual y estima ahorro para cargas de chat LLM.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="icon-button" type="button" title="Reiniciar parametros" onClick={() => setOptions(defaultOptions)}>
-                  <RefreshCcw className="h-4 w-4" />
-                </button>
-                <button className="icon-button" type="button" title="Limpiar imagenes" onClick={clearItems} disabled={items.length === 0}>
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </header>
-
-          <div className="mx-auto grid w-full max-w-6xl flex-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="space-y-4">
-              <DropZone inputRef={inputRef} isProcessing={isProcessing} onFiles={handleFiles} />
-              {error ? <div className="rounded-lg border border-chat-danger/40 bg-chat-danger/10 px-3 py-2 text-sm text-red-100">{error}</div> : null}
-              <ImageGrid items={items} onDownload={downloadItem} />
-            </div>
-
-            <aside className="space-y-4">
-              <Panel title="Modelo de ahorro" icon={<BarChart3 className="h-4 w-4" />}>
-                <dl className="space-y-3 text-sm">
-                  <Row label="Relacion de compresion" value={totals.compressionRatio ? `${totals.compressionRatio.toFixed(2)}x` : '0x'} />
-                  <Row label="Base64 evitado" value={formatBytes(Math.max(0, totals.originalBase64Bytes - totals.compressedBase64Bytes))} />
-                  <Row label="Memoria liberada" value={formatBytes(totals.savedBytes)} />
-                  <Row label="Imagenes procesadas" value={String(items.length)} />
-                </dl>
-              </Panel>
-              <Panel title="Cadena DSP" icon={<CheckCircle2 className="h-4 w-4" />}>
-                <ol className="space-y-2 text-sm text-chat-muted">
-                  <li>1. Adquisicion local de senal visual.</li>
-                  <li>2. Remuestreo bilineal a dimension maxima.</li>
-                  <li>3. Transformacion RGB a luminancia opcional.</li>
-                  <li>4. Cuantizacion y codificacion JPEG.</li>
-                  <li>5. Evaluacion con MSE, PSNR y bytes.</li>
-                </ol>
-              </Panel>
-            </aside>
-          </div>
-        </section>
+        </div>
       </div>
     </main>
   );
 }
 
-type DropZoneProps = {
-  inputRef: React.MutableRefObject<HTMLInputElement | null>;
-  isProcessing: boolean;
-  onFiles: (files: FileList | File[]) => void;
-};
-
-function DropZone({ inputRef, isProcessing, onFiles }: DropZoneProps) {
+function ComplianceSummary() {
   return (
-    <label
-      className="flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-[28px] border border-dashed border-chat-border bg-chat-elevated px-6 py-8 text-center shadow-composer transition hover:border-chat-muted hover:bg-chat-hover"
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={(event) => {
-        event.preventDefault();
-        onFiles(event.dataTransfer.files);
-      }}
-    >
-      <input ref={inputRef} className="sr-only" type="file" accept="image/*" multiple onChange={(event) => event.target.files && onFiles(event.target.files)} />
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-chat-border bg-chat-bg">
-        {isProcessing ? <Loader2 className="h-7 w-7 animate-spin text-chat-accent" /> : <UploadCloud className="h-7 w-7 text-chat-accent" />}
+    <section className="border border-border bg-background">
+      <div className="border-b border-border p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Por que cumple</p>
+        <h2 className="mt-2 text-base font-semibold">Adquiere, transforma, analiza y justifica una senal real.</h2>
       </div>
-      <p className="text-base font-medium">Arrastra imagenes o selecciona archivos</p>
-      <p className="mt-2 max-w-xl text-sm text-chat-muted">
-        El navegador decodifica PNG, JPEG, WebP, BMP o GIF cuando el motor lo soporte. La salida siempre se entrega como JPG comprimido.
-      </p>
-    </label>
+      <div className="grid md:grid-cols-2">
+        <RubricPoint title="Procesamiento Digital de Senales" body="La imagen se usa como senal discreta 2D: remuestreo, luminancia opcional, cuantizacion JPEG, MSE y PSNR." />
+        <RubricPoint title="Herramienta moderna" body="Es una app web publicable con React, TypeScript, Tailwind y Vercel. Comprime antes de subir al servidor." />
+        <RubricPoint title="Analisis de datos" body="Mide bytes originales, JPG, ahorro, base64 evitado, relacion de compresion y PSNR." />
+        <RubricPoint title="Limitaciones" body="Explica que JPEG pierde transparencia, PSNR no mide significado y algunos formatos dependen del navegador." />
+      </div>
+    </section>
   );
 }
 
-function ImageGrid({ items, onDownload }: { items: ProcessedImage[]; onDownload: (item: ProcessedImage) => void }) {
+function RubricPoint({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="border-b border-border p-4 last:border-b-0 md:border-r md:[&:nth-child(even)]:border-r-0">
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
+    </div>
+  );
+}
+
+function Story({ inputRef, isProcessing, onFiles }: { inputRef: React.MutableRefObject<HTMLInputElement | null>; isProcessing: boolean; onFiles: (files: FileList | File[]) => void }) {
+  return (
+    <section className="border border-border bg-background">
+      <div className="border-b border-border p-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Story del sistema</p>
+        <h1 className="mt-2 max-w-3xl text-2xl font-semibold tracking-tight">Convierte una imagen pesada en un JPG ligero antes de subirla a un chat LLM.</h1>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
+          Esta pagina demuestra el proyecto final: toma una imagen real, la trata como senal digital, la transforma en el navegador y muestra si el ahorro vale la pena.
+        </p>
+      </div>
+
+      <div className="grid border-b border-border md:grid-cols-3">
+        <StoryStep number="01" title="Sube una imagen" body="Puede ser PNG, JPG, WebP, BMP o GIF si tu navegador lo soporta." />
+        <StoryStep number="02" title="Se procesa localmente" body="El sistema remuestrea pixeles, puede usar luminancia y codifica JPEG." />
+        <StoryStep number="03" title="Compara resultados" body="Ves bytes, ahorro, PSNR y descargas el JPG final." />
+      </div>
+
+      <label
+        className="grid min-h-44 cursor-pointer place-items-center p-6 text-center transition-colors hover:bg-muted"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          event.preventDefault();
+          onFiles(event.dataTransfer.files);
+        }}
+      >
+        <input ref={inputRef} className="sr-only" type="file" accept="image/*" multiple onChange={(event) => event.target.files && onFiles(event.target.files)} />
+        <div>
+          <div className="mx-auto mb-4 grid h-10 w-10 place-items-center bg-foreground text-background">{isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}</div>
+          <p className="font-medium">Seleccionar imagenes</p>
+          <p className="mt-2 text-sm text-muted-foreground">Tambien puedes arrastrarlas aqui. Nada se sube al servidor para comprimir.</p>
+        </div>
+      </label>
+    </section>
+  );
+}
+
+function StoryStep({ number, title, body }: { number: string; title: string; body: string }) {
+  return (
+    <div className="border-b border-border p-4 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0">
+      <p className="font-mono text-xs text-muted-foreground">{number}</p>
+      <h2 className="mt-2 text-sm font-semibold">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
+    </div>
+  );
+}
+
+function ImageResults({ items, onDownload }: { items: ProcessedImage[]; onDownload: (item: ProcessedImage) => void }) {
   if (items.length === 0) {
     return (
-      <div className="grid min-h-64 place-items-center rounded-lg border border-chat-border bg-chat-elevated/40 p-8 text-center">
+      <div className="grid flex-1 place-items-center border border-border bg-[#f5f5f7] p-8 text-center">
         <div>
-          <ImagePlus className="mx-auto h-8 w-8 text-chat-tertiary" />
-          <p className="mt-3 text-sm text-chat-muted">Aun no hay imagenes procesadas.</p>
+          <ImagePlus className="mx-auto h-8 w-8" />
+          <p className="mt-3 text-sm text-muted-foreground">Procesa una imagen para ver antes, despues y metricas.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-3 xl:grid-cols-2">
+    <div className="space-y-4">
       {items.map((item) => (
-        <article key={item.id} className="overflow-hidden rounded-lg border border-chat-border bg-chat-elevated">
-          <div className="grid grid-cols-2 border-b border-chat-border">
+        <article key={item.id} className="border border-border bg-background">
+          <div className="grid md:grid-cols-[1fr_1fr_220px]">
             <Preview label="Entrada" src={item.sourceUrl} />
-            <Preview label="JPG" src={item.outputUrl} />
-          </div>
-          <div className="space-y-3 p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="truncate text-sm font-medium">{item.name}</h2>
-                <p className="text-xs text-chat-tertiary">
-                  {item.width}x{item.height} a {item.outputWidth}x{item.outputHeight}
-                </p>
-              </div>
-              <button className="icon-button shrink-0" type="button" title="Descargar JPG" onClick={() => onDownload(item)}>
+            <Preview label="JPG comprimido" src={item.outputUrl} />
+            <div className="border-t border-border p-3 md:border-l md:border-t-0">
+              <h2 className="truncate text-sm font-semibold">{item.name}</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {item.width}x{item.height} a {item.outputWidth}x{item.outputHeight}
+              </p>
+              <Panel className="mt-3 grid grid-cols-2">
+                <MetricCell label="Original" value={formatBytes(item.metrics.originalBytes)} />
+                <MetricCell label="JPG" value={formatBytes(item.metrics.compressedBytes)} />
+                <MetricCell label="Ahorro" value={`${item.metrics.savedPercent.toFixed(1)}%`} />
+                <MetricCell label="PSNR" value={Number.isFinite(item.psnr) ? `${item.psnr.toFixed(1)} dB` : 'inf'} />
+              </Panel>
+              <PrimaryAction className="mt-3 w-full" title="Descargar JPG comprimido" aria-label={`Descargar JPG comprimido de ${item.name}`} onClick={() => onDownload(item)}>
                 <Download className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              <Metric label="Original" value={formatBytes(item.metrics.originalBytes)} />
-              <Metric label="JPG" value={formatBytes(item.metrics.compressedBytes)} />
-              <Metric label="Ahorro" value={`${item.metrics.savedPercent.toFixed(1)}%`} />
-              <Metric label="PSNR" value={Number.isFinite(item.psnr) ? `${item.psnr.toFixed(1)} dB` : 'inf'} />
+                Descargar JPG comprimido
+              </PrimaryAction>
             </div>
           </div>
         </article>
@@ -276,39 +273,9 @@ function ImageGrid({ items, onDownload }: { items: ProcessedImage[]; onDownload:
 
 function Preview({ label, src }: { label: string; src: string }) {
   return (
-    <figure className="relative aspect-[4/3] overflow-hidden bg-chat-bg">
+    <figure className="relative aspect-[4/3] overflow-hidden border-b border-border bg-muted md:border-b-0 md:border-r">
       <img className="h-full w-full object-contain" src={src} alt={label} />
-      <figcaption className="absolute left-2 top-2 rounded-md border border-chat-border bg-chat-sidebar/80 px-2 py-1 text-[11px] text-chat-muted">{label}</figcaption>
+      <figcaption className="absolute left-2 top-2 bg-background px-2 py-1 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">{label}</figcaption>
     </figure>
-  );
-}
-
-function Panel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <section className="rounded-lg border border-chat-border bg-chat-elevated p-4">
-      <div className="mb-4 flex items-center gap-2 text-sm font-medium text-chat-text">
-        <span className="text-chat-accent">{icon}</span>
-        {title}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 rounded-lg border border-chat-border bg-chat-bg px-2 py-2">
-      <p className="truncate text-[11px] text-chat-tertiary">{label}</p>
-      <p className="truncate text-sm font-semibold text-chat-text">{value}</p>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <dt className="text-chat-muted">{label}</dt>
-      <dd className="font-medium text-chat-text">{value}</dd>
-    </div>
   );
 }
