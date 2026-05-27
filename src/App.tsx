@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { Download, FileImage, ImagePlus, Loader2, RefreshCcw, Trash2, Upload } from 'lucide-react';
-import { DataRow, MetricCell, Panel, PrimaryAction, RangeField, SectionHeader, SwitchField, ToolbarButton } from './design-system';
+import { MetricCell, Panel, PrimaryAction, RangeField, SwitchField, ToolbarButton } from './design-system';
 import { formatBytes, type ByteMetrics } from './metrics';
 import { processImageFile, type ProcessedImage, type ProcessingOptions } from './imageProcessing';
 
@@ -80,162 +80,140 @@ export function App() {
   }
 
   return (
-    <main className="h-dvh overflow-hidden bg-background text-foreground">
-      <div className="mx-auto grid h-full max-w-7xl grid-rows-[56px_1fr]">
-        <header className="flex items-center justify-between border-b border-border px-4">
+    <main className="min-h-dvh bg-background text-foreground">
+      <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-4 py-3">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="grid h-8 w-8 place-items-center bg-foreground text-background">
               <FileImage className="h-4 w-4" />
             </div>
-            <div className="min-w-0 max-w-[240px] sm:max-w-none">
-              <p className="truncate text-sm font-semibold">Transformador de imagenes para contexto LLM</p>
-              <p className="truncate text-xs text-muted-foreground">Procesamiento Digital de Senales · Proyecto final</p>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">Transformador de imágenes</p>
+              <p className="truncate text-xs text-muted-foreground">Alejandro Apodaca Cordova m041852 · Gael Calderon Robles m042449</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-              <ToolbarButton title="Reiniciar parametros" aria-label="Reiniciar parametros" onClick={() => setOptions(defaultOptions)}>
-                <RefreshCcw className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton title="Limpiar imagenes" aria-label="Limpiar imagenes" onClick={clearItems} disabled={items.length === 0}>
-                <Trash2 className="h-4 w-4" />
-              </ToolbarButton>
+          <div className="flex shrink-0 items-center gap-2">
+            <ToolbarButton title="Restablecer ajustes" aria-label="Restablecer ajustes" onClick={() => setOptions(defaultOptions)}>
+              <RefreshCcw className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton title="Limpiar resultados" aria-label="Limpiar resultados" onClick={clearItems} disabled={items.length === 0}>
+              <Trash2 className="h-4 w-4" />
+            </ToolbarButton>
           </div>
-        </header>
-
-        <div className="grid min-h-0 grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="order-2 min-h-0 overflow-y-auto border-t border-border bg-[#f5f5f7] p-4 lg:order-1 lg:border-r lg:border-t-0">
-            <SectionHeader>Configuracion</SectionHeader>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Estos controles cambian el experimento. Si no sabes que mover, deja los valores recomendados.</p>
-            <div className="mt-4 space-y-5">
-              <RangeField
-                label="Calidad JPEG"
-                valueLabel={`${Math.round(options.quality * 100)}%`}
-                min="0.35"
-                max="0.95"
-                step="0.01"
-                value={options.quality}
-                onChange={(event) => setOptions((current) => ({ ...current, quality: Number(event.currentTarget.value) }))}
-              />
-              <RangeField
-                label="Dimension maxima"
-                valueLabel={`${options.maxDimension}px`}
-                min="512"
-                max="2400"
-                step="64"
-                value={options.maxDimension}
-                onChange={(event) => setOptions((current) => ({ ...current, maxDimension: Number(event.currentTarget.value) }))}
-              />
-              <SwitchField label="Convertir a luminancia" checked={options.grayscale} onChange={(checked) => setOptions((current) => ({ ...current, grayscale: checked }))} />
-            </div>
-
-          <SectionHeader className="mt-8">Resultado total</SectionHeader>
-            <Panel className="mt-4 grid grid-cols-2">
-              <MetricCell label="Original" value={formatBytes(totals.originalBytes)} />
-              <MetricCell label="JPG" value={formatBytes(totals.compressedBytes)} />
-              <MetricCell label="Ahorro" value={`${totals.savedPercent.toFixed(1)}%`} />
-              <MetricCell label="Contexto" value={`${totals.estimatedContextUnitsSaved.toLocaleString()} u.`} />
-            </Panel>
-
-            <Panel className="mt-4 divide-y divide-border">
-              <DataRow label="Compresion" value={totals.compressionRatio ? `${totals.compressionRatio.toFixed(2)}x` : '0x'} />
-              <DataRow label="Base64 evitado" value={formatBytes(Math.max(0, totals.originalBase64Bytes - totals.compressedBase64Bytes))} />
-              <DataRow label="Archivos listos" value={String(items.length)} />
-            </Panel>
-          </aside>
-
-          <section className="order-1 min-h-0 overflow-y-auto p-4 lg:order-2">
-            <div className="mx-auto flex min-h-full max-w-5xl flex-col gap-5">
-              <Story onFiles={handleFiles} inputRef={inputRef} isProcessing={isProcessing} />
-              {error ? <div className="border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div> : null}
-              <ImageResults items={items} onDownload={downloadItem} />
-              <ComplianceSummary />
-            </div>
-          </section>
         </div>
+      </header>
+
+      <div className="mx-auto flex max-w-5xl flex-col gap-5 px-4 py-5">
+        <Intro />
+        <UploadBox inputRef={inputRef} isProcessing={isProcessing} onFiles={handleFiles} />
+        <Settings options={options} setOptions={setOptions} />
+        {error ? <div className="border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div> : null}
+        <Summary totals={totals} count={items.length} />
+        <ImageResults items={items} onDownload={downloadItem} />
+        <ComplianceSummary />
       </div>
     </main>
   );
 }
 
-function ComplianceSummary() {
+function Intro() {
   return (
-    <section className="border border-border bg-background">
-      <div className="border-b border-border p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Por que cumple</p>
-        <h2 className="mt-2 text-base font-semibold">Adquiere, transforma, analiza y justifica una senal real.</h2>
-      </div>
-      <div className="grid md:grid-cols-2">
-        <RubricPoint title="Procesamiento Digital de Senales" body="La imagen se usa como senal discreta 2D: remuestreo, luminancia opcional, cuantizacion JPEG, MSE y PSNR." />
-        <RubricPoint title="Herramienta moderna" body="Es una app web publicable con React, TypeScript, Tailwind y Vercel. Comprime antes de subir al servidor." />
-        <RubricPoint title="Analisis de datos" body="Mide bytes originales, JPG, ahorro, base64 evitado, relacion de compresion y PSNR." />
-        <RubricPoint title="Limitaciones" body="Explica que JPEG pierde transparencia, PSNR no mide significado y algunos formatos dependen del navegador." />
-      </div>
+    <section className="border border-border bg-background p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Qué hace</p>
+      <h1 className="mt-2 max-w-3xl text-2xl font-semibold tracking-tight">Comprime imágenes antes de subirlas a un chat LLM.</h1>
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
+        La imagen se trata como una señal digital: se remuestrea, se convierte a JPG y se mide cuánto recurso ahorra. Todo ocurre en el navegador.
+      </p>
+      <p className="mt-3 text-sm font-medium">Integrantes: Alejandro Apodaca Cordova (m041852) y Gael Calderon Robles (m042449).</p>
+      <ol className="mt-5 grid gap-3 md:grid-cols-3">
+        <Step title="1. Entra imagen" body="Seleccionas o arrastras un archivo real." />
+        <Step title="2. Se procesa" body="Remuestreo, luminancia opcional y compresión JPEG." />
+        <Step title="3. Sale evidencia" body="Comparas tamaño, ahorro, base64 y PSNR." />
+      </ol>
     </section>
   );
 }
 
-function RubricPoint({ title, body }: { title: string; body: string }) {
+function Step({ title, body }: { title: string; body: string }) {
   return (
-    <div className="border-b border-border p-4 last:border-b-0 md:border-r md:[&:nth-child(even)]:border-r-0">
-      <h3 className="text-sm font-semibold">{title}</h3>
+    <li className="border border-border p-3">
+      <h2 className="text-sm font-semibold">{title}</h2>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
-    </div>
+    </li>
   );
 }
 
-function Story({ inputRef, isProcessing, onFiles }: { inputRef: React.MutableRefObject<HTMLInputElement | null>; isProcessing: boolean; onFiles: (files: FileList | File[]) => void }) {
+function UploadBox({ inputRef, isProcessing, onFiles }: { inputRef: React.MutableRefObject<HTMLInputElement | null>; isProcessing: boolean; onFiles: (files: FileList | File[]) => void }) {
   return (
-    <section className="border border-border bg-background">
-      <div className="border-b border-border p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Story del sistema</p>
-        <h1 className="mt-2 max-w-3xl text-2xl font-semibold tracking-tight">Convierte una imagen pesada en un JPG ligero antes de subirla a un chat LLM.</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-          Esta pagina demuestra el proyecto final: toma una imagen real, la trata como senal digital, la transforma en el navegador y muestra si el ahorro vale la pena.
-        </p>
+    <label
+      className="grid min-h-40 cursor-pointer place-items-center border border-dashed border-border bg-[#f5f5f7] p-6 text-center transition-colors hover:bg-muted"
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.preventDefault();
+        onFiles(event.dataTransfer.files);
+      }}
+    >
+      <input ref={inputRef} className="sr-only" type="file" accept="image/*" multiple onChange={(event) => event.target.files && onFiles(event.target.files)} />
+      <div>
+        <div className="mx-auto mb-3 grid h-10 w-10 place-items-center bg-foreground text-background">{isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}</div>
+        <p className="font-medium">Seleccionar imágenes</p>
+        <p className="mt-2 text-sm text-muted-foreground">También puedes arrastrarlas aquí. La compresión no sube archivos al servidor.</p>
       </div>
+    </label>
+  );
+}
 
-      <div className="grid border-b border-border md:grid-cols-3">
-        <StoryStep number="01" title="Sube una imagen" body="Puede ser PNG, JPG, WebP, BMP o GIF si tu navegador lo soporta." />
-        <StoryStep number="02" title="Se procesa localmente" body="El sistema remuestrea pixeles, puede usar luminancia y codifica JPEG." />
-        <StoryStep number="03" title="Compara resultados" body="Ves bytes, ahorro, PSNR y descargas el JPG final." />
-      </div>
-
-      <label
-        className="grid min-h-44 cursor-pointer place-items-center p-6 text-center transition-colors hover:bg-muted"
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={(event) => {
-          event.preventDefault();
-          onFiles(event.dataTransfer.files);
+function Settings({ options, setOptions }: { options: ProcessingOptions; setOptions: React.Dispatch<React.SetStateAction<ProcessingOptions>> }) {
+  return (
+    <section className="grid gap-4 border border-border p-4 md:grid-cols-[1fr_1fr_220px]">
+      <RangeField
+        label="Calidad JPG"
+        valueLabel={`${Math.round(options.quality * 100)}%`}
+        min="0.35"
+        max="0.95"
+        step="0.01"
+        value={options.quality}
+        onChange={(event) => {
+          const quality = Number(event.currentTarget.value);
+          setOptions((current) => ({ ...current, quality }));
         }}
-      >
-        <input ref={inputRef} className="sr-only" type="file" accept="image/*" multiple onChange={(event) => event.target.files && onFiles(event.target.files)} />
-        <div>
-          <div className="mx-auto mb-4 grid h-10 w-10 place-items-center bg-foreground text-background">{isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}</div>
-          <p className="font-medium">Seleccionar imagenes</p>
-          <p className="mt-2 text-sm text-muted-foreground">Tambien puedes arrastrarlas aqui. Nada se sube al servidor para comprimir.</p>
-        </div>
-      </label>
+      />
+      <RangeField
+        label="Tamaño máximo"
+        valueLabel={`${options.maxDimension}px`}
+        min="512"
+        max="2400"
+        step="64"
+        value={options.maxDimension}
+        onChange={(event) => {
+          const maxDimension = Number(event.currentTarget.value);
+          setOptions((current) => ({ ...current, maxDimension }));
+        }}
+      />
+      <SwitchField label="Usar luminancia" checked={options.grayscale} onChange={(checked) => setOptions((current) => ({ ...current, grayscale: checked }))} />
     </section>
   );
 }
 
-function StoryStep({ number, title, body }: { number: string; title: string; body: string }) {
+function Summary({ totals, count }: { totals: ByteMetrics; count: number }) {
   return (
-    <div className="border-b border-border p-4 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0">
-      <p className="font-mono text-xs text-muted-foreground">{number}</p>
-      <h2 className="mt-2 text-sm font-semibold">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
-    </div>
+    <Panel className="grid grid-cols-2 md:grid-cols-5">
+      <MetricCell label="Original" value={formatBytes(totals.originalBytes)} />
+      <MetricCell label="JPG" value={formatBytes(totals.compressedBytes)} />
+      <MetricCell label="Ahorro" value={`${totals.savedPercent.toFixed(1)}%`} />
+      <MetricCell label="Base64 evitado" value={formatBytes(Math.max(0, totals.originalBase64Bytes - totals.compressedBase64Bytes))} />
+      <MetricCell label="Listas" value={String(count)} />
+    </Panel>
   );
 }
 
 function ImageResults({ items, onDownload }: { items: ProcessedImage[]; onDownload: (item: ProcessedImage) => void }) {
   if (items.length === 0) {
     return (
-      <div className="grid flex-1 place-items-center border border-border bg-[#f5f5f7] p-8 text-center">
+      <div className="grid min-h-36 place-items-center border border-border p-8 text-center">
         <div>
           <ImagePlus className="mx-auto h-8 w-8" />
-          <p className="mt-3 text-sm text-muted-foreground">Procesa una imagen para ver antes, despues y metricas.</p>
+          <p className="mt-3 text-sm text-muted-foreground">Procesa una imagen para ver antes, después y métricas.</p>
         </div>
       </div>
     );
@@ -245,7 +223,7 @@ function ImageResults({ items, onDownload }: { items: ProcessedImage[]; onDownlo
     <div className="space-y-4">
       {items.map((item) => (
         <article key={item.id} className="border border-border bg-background">
-          <div className="grid md:grid-cols-[1fr_1fr_220px]">
+          <div className="grid md:grid-cols-[1fr_1fr_240px]">
             <Preview label="Entrada" src={item.sourceUrl} />
             <Preview label="JPG comprimido" src={item.outputUrl} />
             <div className="border-t border-border p-3 md:border-l md:border-t-0">
@@ -261,7 +239,7 @@ function ImageResults({ items, onDownload }: { items: ProcessedImage[]; onDownlo
               </Panel>
               <PrimaryAction className="mt-3 w-full" title="Descargar JPG comprimido" aria-label={`Descargar JPG comprimido de ${item.name}`} onClick={() => onDownload(item)}>
                 <Download className="h-4 w-4" />
-                Descargar JPG comprimido
+                Descargar JPG
               </PrimaryAction>
             </div>
           </div>
@@ -277,5 +255,20 @@ function Preview({ label, src }: { label: string; src: string }) {
       <img className="h-full w-full object-contain" src={src} alt={label} />
       <figcaption className="absolute left-2 top-2 bg-background px-2 py-1 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">{label}</figcaption>
     </figure>
+  );
+}
+
+function ComplianceSummary() {
+  return (
+    <section className="border border-border bg-background p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Por qué cumple la rúbrica</p>
+      <ul className="mt-3 grid gap-2 text-sm leading-6 text-muted-foreground md:grid-cols-2">
+        <li><strong className="text-foreground">Rúbricas revisadas:</strong> 24ICE04 y 24ICE05 están incluidas en el repositorio.</li>
+        <li><strong className="text-foreground">Adquiere señal real:</strong> usa imágenes cargadas por el usuario.</li>
+        <li><strong className="text-foreground">Transforma:</strong> remuestrea, puede usar luminancia y codifica JPEG.</li>
+        <li><strong className="text-foreground">Analiza:</strong> calcula bytes, ahorro, base64, MSE y PSNR.</li>
+        <li><strong className="text-foreground">Reconoce límites:</strong> JPEG pierde transparencia y PSNR no mide significado semántico.</li>
+      </ul>
+    </section>
   );
 }
