@@ -129,6 +129,10 @@ button:disabled {
   transition: transform 150ms ease, background-color 150ms ease;
 }
 
+.topbar .download-icon {
+  display: none;
+}
+
 .topbar a:hover,
 .topbar button:hover:not(:disabled) {
   background: var(--accent);
@@ -584,7 +588,7 @@ h1 em {
   }
 
   .topbar p {
-    max-width: 8.6rem;
+    max-width: 7.2rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -595,15 +599,32 @@ h1 em {
   }
 
   .topbar-actions {
-    gap: 0.45rem;
+    gap: 0.34rem;
   }
 
   .topbar a,
   .topbar button {
-    padding: 0.32rem 0.42rem;
-    font-size: 0.58rem;
+    width: 2rem;
+    height: 2rem;
+    padding: 0.3rem 0.36rem;
+    font-size: 0.54rem;
     letter-spacing: 0.06em;
     box-shadow: 2px 2px 0 var(--foreground);
+  }
+
+  .topbar a svg {
+    width: 0.78rem;
+    height: 0.78rem;
+  }
+
+  .topbar a span,
+  .topbar button span,
+  .topbar .pdf-icon {
+    display: none;
+  }
+
+  .topbar .download-icon {
+    display: block;
   }
 
   .hero {

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Download, FileText, Loader2, Upload } from 'lucide-react';
+import { Download, FileText, Github, Loader2, RefreshCcw, Upload } from 'lucide-react';
 import { formatBytes } from './metrics';
 import { processImageFile, type ProcessedImage, type ProcessingOptions } from './imageProcessing';
 
@@ -70,12 +70,18 @@ export function App() {
           <span>Alejandro Apodaca m041852 / Gael Calderon m042449</span>
         </div>
         <div className="topbar-actions">
+          <a href="https://github.com/apoapps/proyecto-final-procesamiento-digital-senales" target="_blank" rel="noreferrer">
+            <Github className="h-3.5 w-3.5" />
+            <span>GitHub</span>
+          </a>
           <a href="/reporte.pdf" download="reporte-transformador-imagenes.pdf">
-            <FileText className="h-3.5 w-3.5" />
-            Reporte
+            <FileText className="h-3.5 w-3.5 pdf-icon" />
+            <Download className="h-3.5 w-3.5 download-icon" />
+            <span>PDF</span>
           </a>
           <button type="button" onClick={reset} disabled={!image}>
-            Reiniciar
+            <RefreshCcw className="h-3.5 w-3.5" />
+            <span>Reiniciar</span>
           </button>
         </div>
       </header>
