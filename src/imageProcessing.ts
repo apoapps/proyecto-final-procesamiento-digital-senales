@@ -4,6 +4,8 @@ export type ProcessingOptions = {
   quality: number;
   maxDimension: number;
   grayscale: boolean;
+  removeChroma: boolean;
+  compress: boolean;
   chromaColor?: string;
   chromaMode: 'remove' | 'replace';
   backgroundColor: string;
@@ -29,6 +31,7 @@ export type ProcessedImage = {
 
 export type ChromaResult = {
   detected: boolean;
+  applied: boolean;
   color: string;
   mode: 'remove' | 'replace';
   backgroundColor: string;
@@ -46,7 +49,7 @@ type LoadedBitmap = {
 export async function processImageFile(file: File, options: ProcessingOptions): Promise<ProcessedImage> {
   const sourceUrl = URL.createObjectURL(file);
   const loaded = await loadBitmap(file);
-  const dimensions = fitWithin(loaded.width, loaded.height, options.maxDimension);
+  const dimensions = options.compress ? fitWithin(loaded.width, loaded.height, options.maxDimension) : { width: loaded.width, height: loaded.height };
   const workingCanvas = document.createElement('canvas');
   workingCanvas.width = dimensions.width;
   workingCanvas.height = dimensions.height;
@@ -63,8 +66,8 @@ export async function processImageFile(file: File, options: ProcessingOptions): 
   const chroma = transformChromaIfPresent(workingContext, dimensions.width, dimensions.height, options);
 
   const reference = workingContext.getImageData(0, 0, dimensions.width, dimensions.height);
-  const outputType = chroma.detected && chroma.mode === 'remove' ? 'image/png' : 'image/jpeg';
-  const blob = await canvasToBlob(workingCanvas, outputType, options.quality);
+  const outputType = chooseOutputType(file, options, chroma);
+  const blob = outputType === 'source/original' ? file : await canvasToBlob(workingCanvas, outputType, options.compress ? options.quality : undefined);
   const outputUrl = URL.createObjectURL(blob);
   const decoded = await loadBitmap(blob);
   const decodedCanvas = document.createElement('canvas');
@@ -88,7 +91,7 @@ export async function processImageFile(file: File, options: ProcessingOptions): 
     outputWidth: dimensions.width,
     outputHeight: dimensions.height,
     originalType: file.type || 'desconocido',
-    outputType,
+    outputType: outputType === 'source/original' ? file.type || 'application/octet-stream' : outputType,
     chroma,
     mse,
     psnr: calculatePsnr(mse),
@@ -146,7 +149,19 @@ function transformChromaIfPresent(context: CanvasRenderingContext2D, width: numb
   const background = hexToRgb(options.backgroundColor) ?? { r: 255, g: 255, b: 255 };
 
   if (!chroma) {
-    return { detected: false, color: '#ffffff', mode: options.chromaMode, backgroundColor: rgbToHex(background.r, background.g, background.b), removedPixels: 0, removedPercent: 0 };
+    return { detected: false, applied: false, color: '#ffffff', mode: options.chromaMode, backgroundColor: rgbToHex(background.r, background.g, background.b), removedPixels: 0, removedPercent: 0 };
+  }
+
+  if (!options.removeChroma) {
+    return {
+      detected: true,
+      applied: false,
+      color: rgbToHex(chroma.r, chroma.g, chroma.b),
+      mode: options.chromaMode,
+      backgroundColor: rgbToHex(background.r, background.g, background.b),
+      removedPixels: 0,
+      removedPercent: 0
+    };
   }
 
   let removedPixels = 0;
@@ -183,12 +198,19 @@ function transformChromaIfPresent(context: CanvasRenderingContext2D, width: numb
 
   return {
     detected,
+    applied: detected,
     color: rgbToHex(chroma.r, chroma.g, chroma.b),
     mode: options.chromaMode,
     backgroundColor: rgbToHex(background.r, background.g, background.b),
     removedPixels: detected ? removedPixels : 0,
     removedPercent: detected ? removedPercent : 0
   };
+}
+
+function chooseOutputType(file: File, options: ProcessingOptions, chroma: ChromaResult) {
+  if (!options.compress && !chroma.applied) return 'source/original';
+  if (chroma.applied && chroma.mode === 'remove') return 'image/png';
+  return options.compress ? 'image/jpeg' : 'image/png';
 }
 
 function detectChromaColor(pixels: Uint8ClampedArray, width: number, height: number) {
@@ -276,7 +298,7 @@ function require2d(canvas: HTMLCanvasElement) {
   return context;
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number) {
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number) {
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (blob) => {

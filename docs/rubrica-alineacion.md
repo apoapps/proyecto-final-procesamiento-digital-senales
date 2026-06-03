@@ -14,7 +14,7 @@ Rúbricas revisadas:
 
 ## Concepto final
 
-La interfaz final comunica una idea simple: **fondo limpio y archivo optimizado**.
+La interfaz final comunica una idea simple: **fondo limpio y archivo optimizado**, con dos decisiones separadas: quitar chroma y comprimir.
 
 La app no muestra todos los indicadores técnicos para no confundir al usuario. El reporte conserva la explicación de DSP, chroma key, MSE, PSNR, base64 y limitaciones para cumplir la rúbrica.
 
@@ -26,20 +26,20 @@ La app no muestra todos los indicadores técnicos para no confundir al usuario. 
 | Justificación de relevancia | El problema afecta ancho de banda, tiempo de carga y tamaño de datos. | Reporte: problema y conclusiones. |
 | Preguntas de investigación | Se pregunta cuánto peso se ahorra, cómo comunicarlo y qué límites tiene JPEG. | Reporte: preguntas de investigación. |
 | Método apropiado | Se usa detección de chroma, segmentación por distancia de color, remuestreo, PNG/JPEG, medición de bytes, MSE y PSNR. | `src/imageProcessing.ts`; reporte: metodología. |
-| Diseño experimental | Se fija calidad 72%, dimensión máxima 1280 px, opción de transparencia/reemplazo y fixture reproducible. | Reporte: diseño experimental. |
+| Diseño experimental | Se fija calidad 72%, dimensión máxima 1280 px, toggles de chroma/compresión, opción de transparencia/reemplazo y fixture reproducible. | Reporte: diseño experimental. |
 | Análisis e interpretación | Se reporta 84.1% de ahorro y relación de compresión 6.31x. | Reporte: resultados. |
 | Conclusiones válidas | Se concluye que la optimización local reduce recursos sin complicar la UX. | Reporte: conclusiones. |
 | Limitaciones | Se reconocen transparencia, texto pequeño, PSNR y compatibilidad de navegador. | Reporte: limitaciones. |
-| Conocimiento basado en literatura | Se citan procesamiento de imágenes, señales discretas, JPEG y Canvas. | Reporte: bibliografía. |
+| Conocimiento basado en literatura | Se citan procesamiento de imágenes, señales discretas, JPEG, Canvas y Pillow. | Reporte: bibliografía. |
 
 ## 24ICE05: herramientas modernas de ingeniería y TI
 
 | Criterio | Cómo se cumple | Evidencia |
 | --- | --- | --- |
 | Crear herramienta moderna | Se construyó una app web funcional. | `src/`, `package.json`. |
-| Seleccionar herramienta adecuada | Se eligió navegador/Canvas para optimizar antes del servidor. | Reporte: herramienta moderna. |
-| Aplicar y evaluar herramienta | La app procesa una imagen, muestra ahorro, reporta el color chroma y descarga PNG o JPG según el modo. | UI final; `npm run build`. |
-| Metodología de creación | Flujo: adquirir, remuestrear, codificar, medir, reportar. | Reporte: metodología. |
+| Seleccionar herramienta adecuada | Se eligió navegador/Canvas para optimizar antes del servidor y se agregó un helper opcional de Python/Pillow como comparación reproducible. | Reporte: herramienta moderna; `scripts/remove-background.py`. |
+| Aplicar y evaluar herramienta | La app procesa una imagen, muestra ahorro, reporta el color chroma, permite activar/desactivar chroma y compresión, y descarga solo cuando hay ahorro o limpieza aplicada. | UI final; `npm run build`. |
+| Metodología de creación | Flujo: adquirir, detectar chroma, aplicar toggles, remuestrear, codificar, medir, reportar. | Reporte: metodología. |
 | Limitaciones técnicas | Se describen límites de JPEG, formato y PSNR. | Reporte: limitaciones. |
 | Propuestas de mejora | OCR, SSIM y pruebas con modelos multimodales reales. | Reporte: limitaciones y reflexión. |
 | Predicción/modelización | Se modela ahorro porcentual y expansión base64. | Reporte: predicción y modelización. |

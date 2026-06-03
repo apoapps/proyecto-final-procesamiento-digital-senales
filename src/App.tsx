@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Download, Droplet, FileText, Github, Loader2, RefreshCcw, Upload } from 'lucide-react';
+import { Download, Droplet, FileText, Github, Loader2, RefreshCcw, SlidersHorizontal, Upload } from 'lucide-react';
 import { formatBytes } from './metrics';
 import { processImageFile, type ProcessedImage, type ProcessingOptions } from './imageProcessing';
 
@@ -7,6 +7,8 @@ const defaultOptions: ProcessingOptions = {
   quality: 0.72,
   maxDimension: 1280,
   grayscale: false,
+  removeChroma: true,
+  compress: true,
   chromaMode: 'remove',
   backgroundColor: '#ffffff'
 };
@@ -30,7 +32,7 @@ export function App() {
       }
       const processed = await processImageFile(file, nextOptions);
       setImage(processed);
-      setOptions({ ...nextOptions, chromaColor: processed.chroma.color });
+      setOptions({ ...nextOptions, chromaColor: processed.chroma.detected ? processed.chroma.color : undefined });
     } catch (processingError) {
       setError(processingError instanceof Error ? processingError.message : 'No se pudo procesar la imagen.');
     } finally {
@@ -52,7 +54,7 @@ export function App() {
   }
 
   function updateChromaColor(color: string) {
-    const nextOptions = { ...options, chromaColor: color };
+    const nextOptions = { ...options, chromaColor: color, removeChroma: true };
     setOptions(nextOptions);
     if (loadedFileRef.current) {
       void processFile(loadedFileRef.current, nextOptions);
@@ -60,7 +62,7 @@ export function App() {
   }
 
   function updateBackgroundColor(color: string) {
-    const nextOptions = { ...options, backgroundColor: color, chromaMode: 'replace' as const };
+    const nextOptions = { ...options, backgroundColor: color, chromaMode: 'replace' as const, removeChroma: true };
     setOptions(nextOptions);
     if (loadedFileRef.current) {
       void processFile(loadedFileRef.current, nextOptions);
@@ -68,7 +70,15 @@ export function App() {
   }
 
   function updateChromaMode(mode: ProcessingOptions['chromaMode']) {
-    const nextOptions = { ...options, chromaMode: mode };
+    const nextOptions = { ...options, chromaMode: mode, removeChroma: true };
+    setOptions(nextOptions);
+    if (loadedFileRef.current) {
+      void processFile(loadedFileRef.current, nextOptions);
+    }
+  }
+
+  function updateBooleanOption(key: 'removeChroma' | 'compress', value: boolean) {
+    const nextOptions = { ...options, [key]: value };
     setOptions(nextOptions);
     if (loadedFileRef.current) {
       void processFile(loadedFileRef.current, nextOptions);
@@ -91,13 +101,15 @@ export function App() {
     const anchor = document.createElement('a');
     const baseName = image.name.replace(/\.[^.]+$/, '');
     anchor.href = image.outputUrl;
-    anchor.download = `${baseName}-limpia.${image.outputType === 'image/png' ? 'png' : 'jpg'}`;
+    anchor.download = `${baseName}-procesada.${extensionForOutput(image.outputType, image.name)}`;
     anchor.click();
   }
 
   const savedPercent = image ? image.metrics.savedPercent : 0;
   const original = image ? formatBytes(image.metrics.originalBytes) : '0 B';
   const compressed = image ? formatBytes(image.metrics.compressedBytes) : '0 B';
+  const hasUsefulOutput = Boolean(image && (image.metrics.savedBytes > 0 || image.chroma.applied));
+  const outputLabel = image?.chroma.applied ? (image.chroma.mode === 'remove' ? 'Sin fondo' : 'Fondo nuevo') : image && image.metrics.savedBytes > 0 ? 'Comprimida' : 'Sin ahorro';
 
   return (
     <main className="app-screen">
@@ -132,7 +144,7 @@ export function App() {
             <br />
             <em>{image ? `${savedPercent.toFixed(1)}%` : 'sin'}</em> estorbo.
           </h1>
-          <p className="plain-copy">Detecta chroma si aparece, lo quita, muestra el color encontrado y entrega una version lista para chat o IA.</p>
+          <p className="plain-copy">Activa quitar chroma, comprimir o ambas. Si no hay ahorro ni fondo que limpiar, la pagina no ofrece una descarga innecesaria.</p>
           <p className="credits">Alejandro Apodaca m041852 / Gael Calderon m042449</p>
         </div>
 
@@ -160,12 +172,12 @@ export function App() {
             <div className="empty-upload">
               <div className="upload-icon">{isProcessing ? <Loader2 className="h-7 w-7 animate-spin" /> : <Upload className="h-7 w-7" />}</div>
               <strong>{isDragActive ? 'Suelta la imagen' : 'Sube una imagen'}</strong>
-              <span>La pagina limpia chroma cuando lo encuentra y optimiza el archivo automaticamente.</span>
+              <span>La pagina detecta el color de chroma, limpia el fondo si lo activas y comprime solo cuando conviene.</span>
             </div>
           ) : (
             <div className="compare">
               <Preview label="Original" src={image.sourceUrl} size={original} />
-              <Preview label={image.chroma.detected ? 'Sin chroma' : 'Optimizada'} src={image.outputUrl} size={compressed} transparent={image.outputType === 'image/png'} />
+              <Preview label={outputLabel} src={image.outputUrl} size={compressed} transparent={image.outputType === 'image/png' && image.chroma.applied && image.chroma.mode === 'remove'} />
             </div>
           )}
         </label>
@@ -173,14 +185,18 @@ export function App() {
 
       <footer className="bottom-bar">
         <Metric label="Original" value={original} />
-        <Metric label={image?.chroma.detected ? 'Limpia' : 'Optimizada'} value={compressed} />
-        <Metric label="Ahorro" value={image ? `${savedPercent.toFixed(1)}%` : '0.0%'} highlight />
+        <Metric label={outputLabel === 'Sin ahorro' ? 'Salida' : outputLabel} value={compressed} />
+        <Metric label="Ahorro" value={image && savedPercent > 0 ? `${savedPercent.toFixed(1)}%` : 'Sin ahorro'} highlight={savedPercent > 0} />
         <div className="chroma-controls" aria-label="Controles de chroma">
-          <div className="mode-toggle">
-            <button type="button" className={options.chromaMode === 'remove' ? 'active' : ''} onClick={() => updateChromaMode('remove')} disabled={!image || isProcessing}>
+          <div className="feature-toggles">
+            <ToggleButton active={options.removeChroma} disabled={!image || isProcessing} onClick={() => updateBooleanOption('removeChroma', !options.removeChroma)} label="Quitar chroma" />
+            <ToggleButton active={options.compress} disabled={!image || isProcessing} onClick={() => updateBooleanOption('compress', !options.compress)} label="Comprimir" />
+          </div>
+          <div className="mode-toggle" aria-label="Modo de fondo">
+            <button type="button" className={options.chromaMode === 'remove' ? 'active' : ''} onClick={() => updateChromaMode('remove')} disabled={!image || isProcessing || !options.removeChroma}>
               Quitar
             </button>
-            <button type="button" className={options.chromaMode === 'replace' ? 'active' : ''} onClick={() => updateChromaMode('replace')} disabled={!image || isProcessing}>
+            <button type="button" className={options.chromaMode === 'replace' ? 'active' : ''} onClick={() => updateChromaMode('replace')} disabled={!image || isProcessing || !options.removeChroma}>
               Color
             </button>
           </div>
@@ -189,18 +205,18 @@ export function App() {
               <Droplet className="h-4 w-4" />
               Chroma
             </span>
-            <input type="color" value={options.chromaColor ?? '#00ff00'} onChange={(event) => updateChromaColor(event.target.value)} disabled={!image || isProcessing} />
+            <input type="color" value={options.chromaColor ?? '#00ff00'} onChange={(event) => updateChromaColor(event.target.value)} disabled={!image || isProcessing || !options.removeChroma} />
             <strong>{image?.chroma.detected ? image.chroma.color.toUpperCase() : 'No detectado'}</strong>
           </label>
           <label className="color-field">
             <span>Fondo</span>
-            <input type="color" value={options.backgroundColor} onChange={(event) => updateBackgroundColor(event.target.value)} disabled={!image || isProcessing} />
-            <strong>{options.chromaMode === 'replace' ? options.backgroundColor.toUpperCase() : 'Transparente'}</strong>
+            <input type="color" value={options.backgroundColor} onChange={(event) => updateBackgroundColor(event.target.value)} disabled={!image || isProcessing || !options.removeChroma} />
+            <strong>{options.removeChroma ? (options.chromaMode === 'replace' ? options.backgroundColor.toUpperCase() : 'Transparente') : 'Sin cambio'}</strong>
           </label>
         </div>
-        <button type="button" onClick={downloadImage} disabled={!image}>
+        <button type="button" onClick={downloadImage} disabled={!hasUsefulOutput}>
           <Download className="h-4 w-4" />
-          Descargar {image?.outputType === 'image/png' ? 'PNG' : 'JPG'}
+          {hasUsefulOutput ? `Descargar ${image?.outputType === 'image/png' ? 'PNG' : 'JPG'}` : 'Sin descarga'}
         </button>
       </footer>
 
@@ -221,6 +237,15 @@ function Preview({ label, src, size, transparent = false }: { label: string; src
   );
 }
 
+function ToggleButton({ active, disabled, onClick, label }: { active: boolean; disabled: boolean; onClick: () => void; label: string }) {
+  return (
+    <button type="button" className={active ? 'toggle-button active' : 'toggle-button'} onClick={onClick} disabled={disabled}>
+      <SlidersHorizontal className="h-4 w-4" />
+      <span>{label}</span>
+    </button>
+  );
+}
+
 function Metric({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className={highlight ? 'metric highlight' : 'metric'}>
@@ -228,4 +253,11 @@ function Metric({ label, value, highlight = false }: { label: string; value: str
       <strong>{value}</strong>
     </div>
   );
+}
+
+function extensionForOutput(outputType: string, originalName: string) {
+  if (outputType === 'image/png') return 'png';
+  if (outputType === 'image/jpeg') return 'jpg';
+  const extension = originalName.split('.').pop();
+  return extension && extension !== originalName ? extension : 'png';
 }
