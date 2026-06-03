@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Download, Loader2, Upload } from 'lucide-react';
+import { Download, FileText, Loader2, Upload } from 'lucide-react';
 import { formatBytes } from './metrics';
 import { processImageFile, type ProcessedImage, type ProcessingOptions } from './imageProcessing';
 
@@ -69,9 +69,15 @@ export function App() {
           <p>Transformador de imagenes</p>
           <span>Alejandro Apodaca m041852 / Gael Calderon m042449</span>
         </div>
-        <button type="button" onClick={reset} disabled={!image}>
-          Reiniciar
-        </button>
+        <div className="topbar-actions">
+          <a href="/reporte.pdf" download="reporte-transformador-imagenes.pdf">
+            <FileText className="h-3.5 w-3.5" />
+            Reporte
+          </a>
+          <button type="button" onClick={reset} disabled={!image}>
+            Reiniciar
+          </button>
+        </div>
       </header>
 
       <section className="hero">
