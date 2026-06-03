@@ -29,7 +29,7 @@ Ingeniería Mecatrónica, CETYS Universidad, Campus Mexicali
 \maketitle
 
 \section*{Resumen}
-El proyecto consiste en una página web que toma una imagen original, detecta si tiene fondo de chroma y genera una versión limpia antes de enviarla a un chat o sistema de inteligencia artificial. La idea principal se resume así: \textit{fondo limpio y archivo optimizado}. El sistema procesa la imagen en el navegador, estima el color de chroma, permite ajustarlo con un selector y separa dos decisiones con controles independientes: quitar chroma y comprimir. Si se activa la limpieza, el fondo puede quedar transparente o ser reemplazado por un color elegido. Si se activa la compresión, la imagen se remuestrea y se codifica para ahorrar bytes. Aunque la interfaz final es simple, el funcionamiento interno aplica conceptos de procesamiento digital de señales: adquisición de una señal visual, segmentación por color, remuestreo espacial, codificación, medición de error y modelización del ahorro.
+El proyecto consiste en una página web que toma una imagen original, detecta si tiene fondo de chroma y genera una versión limpia antes de enviarla a un chat o sistema de inteligencia artificial. La idea principal se resume así: \textit{fondo limpio y archivo optimizado}. El sistema procesa la imagen en el navegador, estima el color de chroma, permite ajustarlo con un selector y separa dos decisiones con controles independientes: chroma y comprimir. Si se activa chroma, el fondo se elimina como transparencia. Si se activa compresión, la imagen se remuestrea y se codifica para ahorrar espacio. Aunque la interfaz final es simple, el funcionamiento interno aplica conceptos de procesamiento digital de señales: adquisición de una señal visual, segmentación por color, remuestreo espacial, codificación, medición de error y modelización del ahorro.
 
 \section{Problema de investigación}
 Muchas aplicaciones modernas permiten subir imágenes a modelos de IA. El problema es que una imagen tomada con un teléfono puede pesar varios megabytes y además puede contener un fondo innecesario. En casos de chroma key, por ejemplo, el fondo verde o azul no aporta información al objeto principal y puede distraer tanto al usuario como al sistema que recibe la imagen. Enviar imágenes pesadas o con fondo artificial aumenta el tiempo de carga, el ancho de banda y el tamaño de los datos si la imagen se convierte a base64 para transmitirse por una API.
@@ -45,7 +45,7 @@ Las variables principales del problema son:
   \item Calidad JPEG usada para la compresión.
   \item Color de chroma detectado o ajustado por el usuario.
   \item Estado de los controles: quitar chroma activado/desactivado y compresión activada/desactivada.
-  \item Modo de salida: fondo transparente o fondo reemplazado por color sólido.
+  \item Modo de salida: fondo transparente cuando se aplica chroma.
   \item Error entre la imagen procesada y la imagen codificada.
 \end{itemize}
 
@@ -70,7 +70,7 @@ Esta operación resume la información de color en brillo, lo cual puede ser út
 
 Para remover chroma, el sistema estima un color dominante en los bordes de la imagen. Después compara cada pixel contra ese color usando una distancia en el espacio RGB. Si la distancia es pequeña, el pixel se considera fondo. Si la distancia está cerca del umbral, se aplica una transición suave para evitar bordes recortados. El usuario también puede ajustar el color con un selector visual.
 
-Cuando el control \textit{quitar chroma} está desactivado, el sistema solo reporta el color detectado y no altera el fondo. Cuando está activado, el modo \textit{quitar fondo} guarda PNG para conservar transparencia y el modo \textit{poner color} reemplaza los pixeles de chroma por un color elegido. El control \textit{comprimir} es independiente: si está apagado, se conserva la resolución original; si está encendido, se aplica remuestreo y codificación para ahorrar peso. JPEG usa compresión con pérdida: reduce información para obtener un archivo más pequeño. Para medir el error se calcula el error cuadrático medio:
+Cuando el control \textit{chroma} está desactivado, el sistema solo reporta el color detectado y no altera el fondo. Cuando está activado, elimina los pixeles cercanos al color seleccionado y guarda PNG para conservar transparencia. El control \textit{comprimir} es independiente: si está apagado, se conserva la resolución original y se oculta la métrica de ahorro; si está encendido, se aplica remuestreo y codificación para ahorrar espacio. JPEG usa compresión con pérdida: reduce información para obtener un archivo más pequeño. Para medir el error se calcula el error cuadrático medio:
 \[
 MSE = \frac{1}{N}\sum_{i=1}^{N}(x_i-\hat{x}_i)^2
 \]
@@ -87,10 +87,9 @@ La interfaz final se diseñó para ser directa:
 \begin{itemize}
   \item El usuario sube una imagen.
   \item La página detecta el color de chroma si aparece.
-  \item El usuario activa o desactiva quitar chroma.
+  \item El usuario activa o desactiva chroma.
   \item El usuario activa o desactiva comprimir.
-  \item Si quitar chroma está activo, decide si quita el fondo o lo reemplaza por un color.
-  \item Se muestran métricas de tamaño, ahorro y color detectado.
+  \item Se muestran métricas de tamaño, ahorro de espacio y color detectado.
   \item El usuario puede descargar la salida solo cuando hay ahorro o cuando se aplicó limpieza de chroma.
 \end{itemize}
 
@@ -109,9 +108,9 @@ La metodología aplicada fue la siguiente:
   \item Decodificar la imagen y registrar sus dimensiones y bytes originales.
   \item Estimar el color de chroma a partir de muestras en los bordes.
   \item Si el control de chroma está activo, segmentar el fondo por distancia de color y aplicar borde suave.
-  \item Si el control de chroma está activo, quitar el fondo como transparencia o reemplazarlo por un color sólido.
+  \item Si el control de chroma está activo, quitar el fondo como transparencia.
   \item Si el control de compresión está activo, remuestrear la imagen para limitar su lado mayor a 1280 pixeles.
-  \item Codificar la imagen resultante como PNG si conserva transparencia, JPEG con calidad 72\% si se comprime con fondo sólido, o conservar la salida original cuando no hay una transformación útil.
+  \item Codificar la imagen resultante como PNG si conserva transparencia, JPEG con calidad 72\% si se comprime sin transparencia, o conservar la salida original cuando no hay una transformación útil.
   \item Comparar el tamaño original contra el tamaño optimizado o limpio.
   \item Calcular porcentaje de ahorro, expansión base64 evitada, MSE y PSNR.
   \item Mostrar al usuario las métricas más importantes para la decisión: original, salida, ahorro y color de chroma.
@@ -125,8 +124,7 @@ Para validar el prototipo se usó una imagen de prueba reproducible incluida en 
 \begin{itemize}
   \item Calidad JPEG: 72\%.
   \item Dimensión máxima: 1280 px.
-  \item Formato de salida: PNG cuando hay transparencia, JPG cuando hay fondo sólido.
-  \item Color de reemplazo configurable desde la interfaz.
+  \item Formato de salida: PNG cuando hay transparencia, JPG cuando solo se comprime.
   \item Controles independientes para chroma y compresión.
   \item Procesamiento local en navegador.
 \end{itemize}
@@ -198,7 +196,7 @@ El proyecto también reconoce límites importantes:
 Para reducir estas limitaciones se podrían agregar validaciones futuras como OCR para texto pequeño, SSIM para comparación perceptual y pruebas con modelos multimodales reales.
 
 \section{Conclusiones}
-El proyecto demuestra que aplicar procesamiento digital de señales a imágenes puede resolver un problema actual: limpiar fondos innecesarios y reducir el peso de archivos antes de enviarlos a sistemas de IA. Con una configuración simple de 1280 px y calidad JPEG de 72\%, la prueba obtuvo un ahorro de 84.1\%. Además, el flujo de chroma permite decidir entre transparencia o reemplazo por color sólido, y los toggles separan claramente la limpieza del fondo de la compresión. La interfaz final se mantuvo deliberadamente simple para que cualquier persona entienda el beneficio sin conocer MSE, PSNR, base64 o distancia RGB.
+El proyecto demuestra que aplicar procesamiento digital de señales a imágenes puede resolver un problema actual: limpiar fondos innecesarios y reducir el peso de archivos antes de enviarlos a sistemas de IA. Con una configuración simple de 1280 px y calidad JPEG de 72\%, la prueba obtuvo un ahorro de 84.1\%. Además, el flujo de chroma permite quitar el fondo como transparencia, y los dos controles separan claramente la limpieza del fondo de la compresión. La interfaz final se mantuvo deliberadamente simple para que cualquier persona entienda el beneficio sin conocer MSE, PSNR, base64 o distancia RGB.
 
 La conclusión principal es que la optimización local permite ahorrar recursos sin complicar la experiencia del usuario. El valor del proyecto está en unir una técnica de DSP con una necesidad moderna de aplicaciones web e inteligencia artificial.
 

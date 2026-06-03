@@ -8,9 +8,7 @@ const defaultOptions: ProcessingOptions = {
   maxDimension: 1280,
   grayscale: false,
   removeChroma: true,
-  compress: true,
-  chromaMode: 'remove',
-  backgroundColor: '#ffffff'
+  compress: true
 };
 
 export function App() {
@@ -61,22 +59,6 @@ export function App() {
     }
   }
 
-  function updateBackgroundColor(color: string) {
-    const nextOptions = { ...options, backgroundColor: color, chromaMode: 'replace' as const, removeChroma: true };
-    setOptions(nextOptions);
-    if (loadedFileRef.current) {
-      void processFile(loadedFileRef.current, nextOptions);
-    }
-  }
-
-  function updateChromaMode(mode: ProcessingOptions['chromaMode']) {
-    const nextOptions = { ...options, chromaMode: mode, removeChroma: true };
-    setOptions(nextOptions);
-    if (loadedFileRef.current) {
-      void processFile(loadedFileRef.current, nextOptions);
-    }
-  }
-
   function updateBooleanOption(key: 'removeChroma' | 'compress', value: boolean) {
     const nextOptions = { ...options, [key]: value };
     setOptions(nextOptions);
@@ -109,7 +91,9 @@ export function App() {
   const original = image ? formatBytes(image.metrics.originalBytes) : '0 B';
   const compressed = image ? formatBytes(image.metrics.compressedBytes) : '0 B';
   const hasUsefulOutput = Boolean(image && (image.metrics.savedBytes > 0 || image.chroma.applied));
-  const outputLabel = image?.chroma.applied ? (image.chroma.mode === 'remove' ? 'Sin fondo' : 'Fondo nuevo') : image && image.metrics.savedBytes > 0 ? 'Comprimida' : 'Sin ahorro';
+  const showSavings = options.compress && Boolean(image);
+  const outputLabel = image?.chroma.applied ? 'Sin fondo' : image && image.metrics.savedBytes > 0 ? 'Comprimida' : 'Sin cambio';
+  const heroValue = image && options.compress ? `${savedPercent.toFixed(1)}%` : 'sin';
 
   return (
     <main className="app-screen">
@@ -142,9 +126,9 @@ export function App() {
           <h1>
             Fondo limpio,
             <br />
-            <em>{image ? `${savedPercent.toFixed(1)}%` : 'sin'}</em> estorbo.
+            <em>{heroValue}</em> estorbo.
           </h1>
-          <p className="plain-copy">Activa quitar chroma, comprimir o ambas. Si no hay ahorro ni fondo que limpiar, la pagina no ofrece una descarga innecesaria.</p>
+          <p className="plain-copy">Dos controles: chroma para quitar fondo y comprimir para ahorrar espacio. Si nada cambia, no genera una descarga repetida.</p>
           <p className="credits">Alejandro Apodaca m041852 / Gael Calderon m042449</p>
         </div>
 
@@ -172,33 +156,25 @@ export function App() {
             <div className="empty-upload">
               <div className="upload-icon">{isProcessing ? <Loader2 className="h-7 w-7 animate-spin" /> : <Upload className="h-7 w-7" />}</div>
               <strong>{isDragActive ? 'Suelta la imagen' : 'Sube una imagen'}</strong>
-              <span>La pagina detecta el color de chroma, limpia el fondo si lo activas y comprime solo cuando conviene.</span>
+              <span>La pagina detecta el color de chroma y puede comprimir la imagen para ahorrar espacio.</span>
             </div>
           ) : (
             <div className="compare">
               <Preview label="Original" src={image.sourceUrl} size={original} />
-              <Preview label={outputLabel} src={image.outputUrl} size={compressed} transparent={image.outputType === 'image/png' && image.chroma.applied && image.chroma.mode === 'remove'} />
+              <Preview label={outputLabel} src={image.outputUrl} size={compressed} transparent={image.outputType === 'image/png' && image.chroma.applied} />
             </div>
           )}
         </label>
       </section>
 
-      <footer className="bottom-bar">
+      <footer className={showSavings ? 'bottom-bar' : 'bottom-bar without-savings'}>
         <Metric label="Original" value={original} />
-        <Metric label={outputLabel === 'Sin ahorro' ? 'Salida' : outputLabel} value={compressed} />
-        <Metric label="Ahorro" value={image && savedPercent > 0 ? `${savedPercent.toFixed(1)}%` : 'Sin ahorro'} highlight={savedPercent > 0} />
-        <div className="chroma-controls" aria-label="Controles de chroma">
+        <Metric label={outputLabel === 'Sin cambio' ? 'Salida' : outputLabel} value={compressed} />
+        {showSavings ? <Metric label="Ahorro de espacio" value={savedPercent > 0 ? `${savedPercent.toFixed(1)}%` : 'Sin ahorro'} highlight={savedPercent > 0} /> : null}
+        <div className={showSavings ? 'chroma-controls' : 'chroma-controls no-savings'} aria-label="Controles de chroma">
           <div className="feature-toggles">
             <ToggleButton active={options.removeChroma} disabled={!image || isProcessing} onClick={() => updateBooleanOption('removeChroma', !options.removeChroma)} label="Chroma" />
             <ToggleButton active={options.compress} disabled={!image || isProcessing} onClick={() => updateBooleanOption('compress', !options.compress)} label="Comprimir" />
-          </div>
-          <div className="mode-toggle" aria-label="Modo de fondo">
-            <button type="button" className={options.chromaMode === 'remove' ? 'active' : ''} onClick={() => updateChromaMode('remove')} disabled={!image || isProcessing || !options.removeChroma}>
-              Quitar
-            </button>
-            <button type="button" className={options.chromaMode === 'replace' ? 'active' : ''} onClick={() => updateChromaMode('replace')} disabled={!image || isProcessing || !options.removeChroma}>
-              Color
-            </button>
           </div>
           <label className="color-field">
             <span>
@@ -207,11 +183,6 @@ export function App() {
             </span>
             <input type="color" value={options.chromaColor ?? '#00ff00'} onChange={(event) => updateChromaColor(event.target.value)} disabled={!image || isProcessing || !options.removeChroma} />
             <strong>{image?.chroma.detected ? image.chroma.color.toUpperCase() : 'No detectado'}</strong>
-          </label>
-          <label className="color-field">
-            <span>Fondo</span>
-            <input type="color" value={options.backgroundColor} onChange={(event) => updateBackgroundColor(event.target.value)} disabled={!image || isProcessing || !options.removeChroma} />
-            <strong>{options.removeChroma ? (options.chromaMode === 'replace' ? options.backgroundColor.toUpperCase() : 'Transparente') : 'Sin cambio'}</strong>
           </label>
         </div>
         <button type="button" onClick={downloadImage} disabled={!hasUsefulOutput}>

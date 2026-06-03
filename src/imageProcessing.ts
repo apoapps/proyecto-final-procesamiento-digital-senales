@@ -7,8 +7,6 @@ export type ProcessingOptions = {
   removeChroma: boolean;
   compress: boolean;
   chromaColor?: string;
-  chromaMode: 'remove' | 'replace';
-  backgroundColor: string;
 };
 
 export type ProcessedImage = {
@@ -33,8 +31,6 @@ export type ChromaResult = {
   detected: boolean;
   applied: boolean;
   color: string;
-  mode: 'remove' | 'replace';
-  backgroundColor: string;
   removedPixels: number;
   removedPercent: number;
 };
@@ -146,10 +142,9 @@ function transformChromaIfPresent(context: CanvasRenderingContext2D, width: numb
   const imageData = context.getImageData(0, 0, width, height);
   const pixels = imageData.data;
   const chroma = options.chromaColor ? hexToRgb(options.chromaColor) : detectChromaColor(pixels, width, height);
-  const background = hexToRgb(options.backgroundColor) ?? { r: 255, g: 255, b: 255 };
 
   if (!chroma) {
-    return { detected: false, applied: false, color: '#ffffff', mode: options.chromaMode, backgroundColor: rgbToHex(background.r, background.g, background.b), removedPixels: 0, removedPercent: 0 };
+    return { detected: false, applied: false, color: '#ffffff', removedPixels: 0, removedPercent: 0 };
   }
 
   if (!options.removeChroma) {
@@ -157,8 +152,6 @@ function transformChromaIfPresent(context: CanvasRenderingContext2D, width: numb
       detected: true,
       applied: false,
       color: rgbToHex(chroma.r, chroma.g, chroma.b),
-      mode: options.chromaMode,
-      backgroundColor: rgbToHex(background.r, background.g, background.b),
       removedPixels: 0,
       removedPercent: 0
     };
@@ -168,25 +161,11 @@ function transformChromaIfPresent(context: CanvasRenderingContext2D, width: numb
   for (let index = 0; index < pixels.length; index += 4) {
     const distance = colorDistance(pixels[index], pixels[index + 1], pixels[index + 2], chroma.r, chroma.g, chroma.b);
     if (distance < 58) {
-      if (options.chromaMode === 'replace') {
-        pixels[index] = background.r;
-        pixels[index + 1] = background.g;
-        pixels[index + 2] = background.b;
-        pixels[index + 3] = 255;
-      } else {
-        pixels[index + 3] = 0;
-      }
+      pixels[index + 3] = 0;
       removedPixels += 1;
     } else if (distance < 92) {
       const keep = (distance - 58) / 34;
-      if (options.chromaMode === 'replace') {
-        pixels[index] = Math.round(background.r * (1 - keep) + pixels[index] * keep);
-        pixels[index + 1] = Math.round(background.g * (1 - keep) + pixels[index + 1] * keep);
-        pixels[index + 2] = Math.round(background.b * (1 - keep) + pixels[index + 2] * keep);
-        pixels[index + 3] = 255;
-      } else {
-        pixels[index + 3] = Math.min(pixels[index + 3], Math.round(keep * 255));
-      }
+      pixels[index + 3] = Math.min(pixels[index + 3], Math.round(keep * 255));
     }
   }
 
@@ -200,8 +179,6 @@ function transformChromaIfPresent(context: CanvasRenderingContext2D, width: numb
     detected,
     applied: detected,
     color: rgbToHex(chroma.r, chroma.g, chroma.b),
-    mode: options.chromaMode,
-    backgroundColor: rgbToHex(background.r, background.g, background.b),
     removedPixels: detected ? removedPixels : 0,
     removedPercent: detected ? removedPercent : 0
   };
@@ -209,7 +186,7 @@ function transformChromaIfPresent(context: CanvasRenderingContext2D, width: numb
 
 function chooseOutputType(file: File, options: ProcessingOptions, chroma: ChromaResult) {
   if (!options.compress && !chroma.applied) return 'source/original';
-  if (chroma.applied && chroma.mode === 'remove') return 'image/png';
+  if (chroma.applied) return 'image/png';
   return options.compress ? 'image/jpeg' : 'image/png';
 }
 
