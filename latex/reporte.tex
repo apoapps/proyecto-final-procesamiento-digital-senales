@@ -17,7 +17,7 @@
 \graphicspath{{../assets/screens/}{../fixtures/}}
 
 \title{\textbf{Proyecto Final de Procesamiento Digital de Señales}\\
-Transformador de imágenes para hacerlas más livianas antes de enviarlas a IA}
+Transformador de imágenes para limpiar chroma y optimizar archivos antes de enviarlos a IA}
 \author{
 Alejandro Apodaca Córdova --- Matrícula m041852\\
 Gael Calderón Robles --- Matrícula m042449\\
@@ -29,12 +29,12 @@ Ingeniería Mecatrónica, CETYS Universidad, Campus Mexicali
 \maketitle
 
 \section*{Resumen}
-El proyecto consiste en una página web que toma una imagen original y genera una versión JPG más liviana para enviarla a un chat o sistema de inteligencia artificial. La idea principal se resume así: \textit{la misma imagen visual, menos peso}. El sistema procesa la imagen en el navegador, reduce su dimensión máxima, la comprime como JPEG y muestra tres datos fáciles de entender: tamaño original, tamaño optimizado y porcentaje de ahorro. Aunque la interfaz final es simple, el funcionamiento interno aplica conceptos de procesamiento digital de señales: adquisición de una señal visual, remuestreo espacial, codificación con pérdida, medición de error y modelización del ahorro.
+El proyecto consiste en una página web que toma una imagen original, detecta si tiene fondo de chroma y genera una versión limpia antes de enviarla a un chat o sistema de inteligencia artificial. La idea principal se resume así: \textit{fondo limpio y archivo optimizado}. El sistema procesa la imagen en el navegador, estima el color de chroma, permite ajustarlo con un selector, quita el fondo o lo reemplaza por un color elegido, reduce la dimensión máxima y codifica la salida como PNG o JPEG según el modo. Aunque la interfaz final es simple, el funcionamiento interno aplica conceptos de procesamiento digital de señales: adquisición de una señal visual, segmentación por color, remuestreo espacial, codificación, medición de error y modelización del ahorro.
 
 \section{Problema de investigación}
-Muchas aplicaciones modernas permiten subir imágenes a modelos de IA. El problema es que una imagen tomada con un teléfono puede pesar varios megabytes, aunque para explicar una idea en un chat no siempre se necesita toda esa resolución. Enviar imágenes pesadas aumenta el tiempo de carga, el ancho de banda y el tamaño de los datos si la imagen se convierte a base64 para transmitirse por una API.
+Muchas aplicaciones modernas permiten subir imágenes a modelos de IA. El problema es que una imagen tomada con un teléfono puede pesar varios megabytes y además puede contener un fondo innecesario. En casos de chroma key, por ejemplo, el fondo verde o azul no aporta información al objeto principal y puede distraer tanto al usuario como al sistema que recibe la imagen. Enviar imágenes pesadas o con fondo artificial aumenta el tiempo de carga, el ancho de banda y el tamaño de los datos si la imagen se convierte a base64 para transmitirse por una API.
 
-Por eso se plantea el siguiente problema de investigación: \textbf{¿cómo reducir el peso de una imagen antes de enviarla a un sistema de IA, manteniendo una versión visualmente útil para el usuario?}
+Por eso se plantea el siguiente problema de investigación: \textbf{¿cómo limpiar el fondo chroma y reducir el peso de una imagen antes de enviarla a un sistema de IA, manteniendo una versión visualmente útil para el usuario?}
 
 Las variables principales del problema son:
 \begin{itemize}
@@ -43,6 +43,8 @@ Las variables principales del problema son:
   \item Porcentaje de ahorro.
   \item Dimensión máxima permitida después del remuestreo.
   \item Calidad JPEG usada para la compresión.
+  \item Color de chroma detectado o ajustado por el usuario.
+  \item Modo de salida: fondo transparente o fondo reemplazado por color sólido.
   \item Error entre la imagen procesada y la imagen codificada.
 \end{itemize}
 
@@ -52,8 +54,8 @@ La relevancia del problema está en que optimizar imágenes antes de subirlas re
 Para guiar el proyecto se definieron tres preguntas:
 \begin{enumerate}
   \item ¿Cuánto peso se puede ahorrar al remuestrear una imagen y codificarla como JPEG?
-  \item ¿Cómo mostrar ese ahorro de forma simple?
-  \item ¿Qué limitaciones aparecen cuando se usa compresión JPEG para preparar imágenes destinadas a sistemas de IA?
+  \item ¿Cómo detectar y comunicar el color de chroma de forma simple?
+  \item ¿Qué limitaciones aparecen cuando se usa segmentación por color, transparencia PNG o compresión JPEG para preparar imágenes destinadas a sistemas de IA?
 \end{enumerate}
 
 \section{Marco teórico}
@@ -65,7 +67,9 @@ Y = 0.299R + 0.587G + 0.114B
 \]
 Esta operación resume la información de color en brillo, lo cual puede ser útil cuando el color no es esencial para el análisis.
 
-Después del remuestreo, la imagen se codifica como JPEG. JPEG usa compresión con pérdida: reduce información para obtener un archivo más pequeño. Para medir el error se calcula el error cuadrático medio:
+Para remover chroma, el sistema estima un color dominante en los bordes de la imagen. Después compara cada pixel contra ese color usando una distancia en el espacio RGB. Si la distancia es pequeña, el pixel se considera fondo. Si la distancia está cerca del umbral, se aplica una transición suave para evitar bordes recortados. El usuario también puede ajustar el color con un selector visual.
+
+Cuando el modo seleccionado es \textit{quitar fondo}, la salida se guarda como PNG para conservar transparencia. Cuando el modo seleccionado es \textit{poner color}, los pixeles de chroma se reemplazan por el color elegido y la salida puede codificarse como JPEG para ahorrar peso. JPEG usa compresión con pérdida: reduce información para obtener un archivo más pequeño. Para medir el error se calcula el error cuadrático medio:
 \[
 MSE = \frac{1}{N}\sum_{i=1}^{N}(x_i-\hat{x}_i)^2
 \]
@@ -78,12 +82,13 @@ En la interfaz final no se muestra PSNR para no confundir al usuario, pero sí s
 \section{Herramienta moderna desarrollada}
 Se creó una aplicación web con Vite, React, TypeScript y Tailwind CSS. La herramienta funciona en el navegador, por lo que la imagen se transforma antes de llegar a un servidor. Esto es importante porque el objetivo del proyecto no es solo comprimir una imagen, sino evitar que una imagen innecesariamente pesada sea enviada a una aplicación de IA.
 
-La interfaz final se diseñó para ser muy simple:
+La interfaz final se diseñó para ser directa:
 \begin{itemize}
   \item El usuario sube una imagen.
-  \item La página genera una versión optimizada.
-  \item Se muestran tres métricas: original, optimizada y ahorro.
-  \item El usuario puede descargar el JPG final.
+  \item La página detecta el color de chroma si aparece.
+  \item El usuario decide si quita el fondo o lo reemplaza por un color.
+  \item Se muestran métricas de tamaño, ahorro y color detectado.
+  \item El usuario puede descargar el PNG transparente o el JPG optimizado.
 \end{itemize}
 
 \begin{figure}[H]
@@ -97,11 +102,14 @@ La metodología aplicada fue la siguiente:
 \begin{enumerate}
   \item Adquirir una imagen real desde el navegador mediante carga de archivo.
   \item Decodificar la imagen y registrar sus dimensiones y bytes originales.
+  \item Estimar el color de chroma a partir de muestras en los bordes.
+  \item Segmentar el fondo por distancia de color y aplicar borde suave.
+  \item Quitar el fondo como transparencia o reemplazarlo por un color sólido.
   \item Remuestrear la imagen para limitar su lado mayor a 1280 pixeles.
-  \item Codificar la imagen resultante como JPEG con calidad 72\%.
-  \item Comparar el tamaño original contra el tamaño optimizado.
+  \item Codificar la imagen resultante como PNG si conserva transparencia o JPEG con calidad 72\% si tiene fondo sólido.
+  \item Comparar el tamaño original contra el tamaño optimizado o limpio.
   \item Calcular porcentaje de ahorro, expansión base64 evitada, MSE y PSNR.
-  \item Mostrar al usuario solo las métricas más importantes para la decisión: original, optimizada y ahorro.
+  \item Mostrar al usuario las métricas más importantes para la decisión: original, salida, ahorro y color de chroma.
 \end{enumerate}
 
 Esta metodología define variables, aplica un método de investigación, ejecuta un experimento reproducible y permite interpretar los datos obtenidos.
@@ -112,7 +120,8 @@ Para validar el prototipo se usó una imagen de prueba reproducible incluida en 
 \begin{itemize}
   \item Calidad JPEG: 72\%.
   \item Dimensión máxima: 1280 px.
-  \item Formato de salida: JPG.
+  \item Formato de salida: PNG cuando hay transparencia, JPG cuando hay fondo sólido.
+  \item Color de reemplazo configurable desde la interfaz.
   \item Procesamiento local en navegador.
 \end{itemize}
 
@@ -124,6 +133,7 @@ Las variables de respuesta fueron:
   \item Relación de compresión.
   \item Base64 evitado.
   \item PSNR.
+  \item Color de chroma detectado.
 \end{itemize}
 
 \section{Resultados}
@@ -149,7 +159,7 @@ PSNR & 36.2 dB\\
 \end{tabular}
 \end{table}
 
-El patrón principal es claro: la reducción de resolución y la compresión JPEG disminuyen drásticamente el peso del archivo. Esto responde directamente al concepto de la página: \textbf{la misma imagen puede ser mucho más liviana}. Para un usuario no técnico, el porcentaje de ahorro es la métrica más importante. Para justificarlo técnicamente, el reporte conserva las métricas de DSP y modelo de datos.
+El patrón principal es claro: la reducción de resolución y la compresión JPEG disminuyen drásticamente el peso del archivo. En imágenes con chroma, la segmentación por color agrega una segunda utilidad: limpiar el fondo antes del transporte digital. Para un usuario no técnico, el porcentaje de ahorro y el color detectado son las métricas más importantes. Para justificarlo técnicamente, el reporte conserva las métricas de DSP y modelo de datos.
 
 \section{Predicción y modelización}
 Además de medir el tamaño final, se modeló la expansión base64 con la regla:
@@ -168,6 +178,8 @@ Con este modelo la aplicación puede informar al usuario cuántos recursos se re
 El proyecto también reconoce límites importantes:
 \begin{itemize}
   \item JPEG no conserva transparencia; una imagen PNG con canal alfa puede cambiar visualmente.
+  \item La detección de chroma funciona mejor cuando el fondo es relativamente uniforme y aparece cerca de los bordes.
+  \item Si el objeto tiene colores parecidos al chroma, la segmentación puede eliminar partes del objeto.
   \item La compresión puede afectar texto pequeño o detalles finos.
   \item PSNR mide diferencia numérica, pero no garantiza que un modelo de IA interprete exactamente igual la imagen.
   \item La compatibilidad de formatos depende del navegador.
@@ -177,7 +189,7 @@ El proyecto también reconoce límites importantes:
 Para reducir estas limitaciones se podrían agregar validaciones futuras como OCR para texto pequeño, SSIM para comparación perceptual y pruebas con modelos multimodales reales.
 
 \section{Conclusiones}
-El proyecto demuestra que aplicar procesamiento digital de señales a imágenes puede resolver un problema actual: reducir el peso de archivos antes de enviarlos a sistemas de IA. Con una configuración simple de 1280 px y calidad JPEG de 72\%, la prueba obtuvo un ahorro de 84.1\%. La interfaz final se mantuvo deliberadamente simple para que cualquier persona entienda el beneficio sin conocer MSE, PSNR o base64.
+El proyecto demuestra que aplicar procesamiento digital de señales a imágenes puede resolver un problema actual: limpiar fondos innecesarios y reducir el peso de archivos antes de enviarlos a sistemas de IA. Con una configuración simple de 1280 px y calidad JPEG de 72\%, la prueba obtuvo un ahorro de 84.1\%. Además, el flujo de chroma permite decidir entre transparencia o reemplazo por color sólido. La interfaz final se mantuvo deliberadamente simple para que cualquier persona entienda el beneficio sin conocer MSE, PSNR, base64 o distancia RGB.
 
 La conclusión principal es que la optimización local permite ahorrar recursos sin complicar la experiencia del usuario. El valor del proyecto está en unir una técnica de DSP con una necesidad moderna de aplicaciones web e inteligencia artificial.
 

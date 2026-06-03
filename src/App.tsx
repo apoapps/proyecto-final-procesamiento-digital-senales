@@ -1,28 +1,26 @@
 import { useRef, useState } from 'react';
-import { Download, FileText, Github, Loader2, RefreshCcw, Upload } from 'lucide-react';
+import { Download, Droplet, FileText, Github, Loader2, RefreshCcw, Upload } from 'lucide-react';
 import { formatBytes } from './metrics';
 import { processImageFile, type ProcessedImage, type ProcessingOptions } from './imageProcessing';
 
 const defaultOptions: ProcessingOptions = {
   quality: 0.72,
   maxDimension: 1280,
-  grayscale: false
+  grayscale: false,
+  chromaMode: 'remove',
+  backgroundColor: '#ffffff'
 };
 
 export function App() {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const loadedFileRef = useRef<File | null>(null);
   const [image, setImage] = useState<ProcessedImage | null>(null);
+  const [options, setOptions] = useState<ProcessingOptions>(defaultOptions);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleFiles(fileList: FileList | File[]) {
-    const file = Array.from(fileList).find((entry) => entry.type.startsWith('image/'));
-    if (!file) {
-      setError('Sube una imagen valida.');
-      return;
-    }
-
+  async function processFile(file: File, nextOptions: ProcessingOptions) {
     setIsProcessing(true);
     setError(null);
     try {
@@ -30,7 +28,9 @@ export function App() {
         URL.revokeObjectURL(image.sourceUrl);
         URL.revokeObjectURL(image.outputUrl);
       }
-      setImage(await processImageFile(file, defaultOptions));
+      const processed = await processImageFile(file, nextOptions);
+      setImage(processed);
+      setOptions({ ...nextOptions, chromaColor: processed.chroma.color });
     } catch (processingError) {
       setError(processingError instanceof Error ? processingError.message : 'No se pudo procesar la imagen.');
     } finally {
@@ -40,11 +40,48 @@ export function App() {
     }
   }
 
+  function handleFiles(fileList: FileList | File[]) {
+    const file = Array.from(fileList).find((entry) => entry.type.startsWith('image/'));
+    if (!file) {
+      setError('Sube una imagen valida.');
+      return;
+    }
+
+    loadedFileRef.current = file;
+    void processFile(file, defaultOptions);
+  }
+
+  function updateChromaColor(color: string) {
+    const nextOptions = { ...options, chromaColor: color };
+    setOptions(nextOptions);
+    if (loadedFileRef.current) {
+      void processFile(loadedFileRef.current, nextOptions);
+    }
+  }
+
+  function updateBackgroundColor(color: string) {
+    const nextOptions = { ...options, backgroundColor: color, chromaMode: 'replace' as const };
+    setOptions(nextOptions);
+    if (loadedFileRef.current) {
+      void processFile(loadedFileRef.current, nextOptions);
+    }
+  }
+
+  function updateChromaMode(mode: ProcessingOptions['chromaMode']) {
+    const nextOptions = { ...options, chromaMode: mode };
+    setOptions(nextOptions);
+    if (loadedFileRef.current) {
+      void processFile(loadedFileRef.current, nextOptions);
+    }
+  }
+
   function reset() {
     if (image) {
       URL.revokeObjectURL(image.sourceUrl);
       URL.revokeObjectURL(image.outputUrl);
     }
+    loadedFileRef.current = null;
+    setOptions(defaultOptions);
     setImage(null);
     setError(null);
   }
@@ -54,7 +91,7 @@ export function App() {
     const anchor = document.createElement('a');
     const baseName = image.name.replace(/\.[^.]+$/, '');
     anchor.href = image.outputUrl;
-    anchor.download = `${baseName}-mas-liviana.jpg`;
+    anchor.download = `${baseName}-limpia.${image.outputType === 'image/png' ? 'png' : 'jpg'}`;
     anchor.click();
   }
 
@@ -91,11 +128,11 @@ export function App() {
           <p className="eyebrow">Proyecto final - Optimizador de imagenes</p>
           <p className="mobile-credits">Alejandro Apodaca m041852 / Gael Calderon m042449</p>
           <h1>
-            La misma imagen,
+            Fondo limpio,
             <br />
-            <em>{image ? `${savedPercent.toFixed(1)}%` : 'mucho'}</em> mas liviana.
+            <em>{image ? `${savedPercent.toFixed(1)}%` : 'sin'}</em> estorbo.
           </h1>
-          <p className="plain-copy">Misma imagen visual. Menos peso. Mejor para enviarla a un chat o sistema de IA.</p>
+          <p className="plain-copy">Detecta chroma si aparece, lo quita, muestra el color encontrado y entrega una version lista para chat o IA.</p>
           <p className="credits">Alejandro Apodaca m041852 / Gael Calderon m042449</p>
         </div>
 
@@ -123,12 +160,12 @@ export function App() {
             <div className="empty-upload">
               <div className="upload-icon">{isProcessing ? <Loader2 className="h-7 w-7 animate-spin" /> : <Upload className="h-7 w-7" />}</div>
               <strong>{isDragActive ? 'Suelta la imagen' : 'Sube una imagen'}</strong>
-              <span>La pagina la hace mas ligera automaticamente.</span>
+              <span>La pagina limpia chroma cuando lo encuentra y optimiza el archivo automaticamente.</span>
             </div>
           ) : (
             <div className="compare">
               <Preview label="Original" src={image.sourceUrl} size={original} />
-              <Preview label="Optimizada" src={image.outputUrl} size={compressed} />
+              <Preview label={image.chroma.detected ? 'Sin chroma' : 'Optimizada'} src={image.outputUrl} size={compressed} transparent={image.outputType === 'image/png'} />
             </div>
           )}
         </label>
@@ -136,11 +173,34 @@ export function App() {
 
       <footer className="bottom-bar">
         <Metric label="Original" value={original} />
-        <Metric label="Optimizada" value={compressed} />
+        <Metric label={image?.chroma.detected ? 'Limpia' : 'Optimizada'} value={compressed} />
         <Metric label="Ahorro" value={image ? `${savedPercent.toFixed(1)}%` : '0.0%'} highlight />
+        <div className="chroma-controls" aria-label="Controles de chroma">
+          <div className="mode-toggle">
+            <button type="button" className={options.chromaMode === 'remove' ? 'active' : ''} onClick={() => updateChromaMode('remove')} disabled={!image || isProcessing}>
+              Quitar
+            </button>
+            <button type="button" className={options.chromaMode === 'replace' ? 'active' : ''} onClick={() => updateChromaMode('replace')} disabled={!image || isProcessing}>
+              Color
+            </button>
+          </div>
+          <label className="color-field">
+            <span>
+              <Droplet className="h-4 w-4" />
+              Chroma
+            </span>
+            <input type="color" value={options.chromaColor ?? '#00ff00'} onChange={(event) => updateChromaColor(event.target.value)} disabled={!image || isProcessing} />
+            <strong>{image?.chroma.detected ? image.chroma.color.toUpperCase() : 'No detectado'}</strong>
+          </label>
+          <label className="color-field">
+            <span>Fondo</span>
+            <input type="color" value={options.backgroundColor} onChange={(event) => updateBackgroundColor(event.target.value)} disabled={!image || isProcessing} />
+            <strong>{options.chromaMode === 'replace' ? options.backgroundColor.toUpperCase() : 'Transparente'}</strong>
+          </label>
+        </div>
         <button type="button" onClick={downloadImage} disabled={!image}>
           <Download className="h-4 w-4" />
-          Descargar JPG
+          Descargar {image?.outputType === 'image/png' ? 'PNG' : 'JPG'}
         </button>
       </footer>
 
@@ -149,9 +209,9 @@ export function App() {
   );
 }
 
-function Preview({ label, src, size }: { label: string; src: string; size: string }) {
+function Preview({ label, src, size, transparent = false }: { label: string; src: string; size: string; transparent?: boolean }) {
   return (
-    <figure className="preview">
+    <figure className={transparent ? 'preview transparent-preview' : 'preview'}>
       <img src={src} alt={label} />
       <figcaption>
         <span>{label}</span>

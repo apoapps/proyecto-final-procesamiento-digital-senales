@@ -1,6 +1,6 @@
 # Proyecto Final PDS: Image Context Transformer
 
-Prototipo web para convertir imágenes de entrada a JPG comprimido antes de subirlas a una aplicación de chat LLM. El procesamiento se ejecuta localmente en el navegador mediante técnicas de DSP: remuestreo espacial, cuantización perceptual, codificación JPEG y medición de error con MSE/PSNR.
+Prototipo web para limpiar y optimizar imágenes antes de subirlas a una aplicación de chat LLM. El procesamiento se ejecuta localmente en el navegador mediante técnicas de DSP: detección de chroma por color dominante, eliminación o reemplazo de fondo, remuestreo espacial, cuantización perceptual, codificación PNG/JPEG y medición de error con MSE/PSNR.
 
 ## Integrantes
 
