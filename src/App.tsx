@@ -189,7 +189,7 @@ export function App() {
         <Metric label="Ahorro" value={image && savedPercent > 0 ? `${savedPercent.toFixed(1)}%` : 'Sin ahorro'} highlight={savedPercent > 0} />
         <div className="chroma-controls" aria-label="Controles de chroma">
           <div className="feature-toggles">
-            <ToggleButton active={options.removeChroma} disabled={!image || isProcessing} onClick={() => updateBooleanOption('removeChroma', !options.removeChroma)} label="Quitar chroma" />
+            <ToggleButton active={options.removeChroma} disabled={!image || isProcessing} onClick={() => updateBooleanOption('removeChroma', !options.removeChroma)} label="Chroma" />
             <ToggleButton active={options.compress} disabled={!image || isProcessing} onClick={() => updateBooleanOption('compress', !options.compress)} label="Comprimir" />
           </div>
           <div className="mode-toggle" aria-label="Modo de fondo">
