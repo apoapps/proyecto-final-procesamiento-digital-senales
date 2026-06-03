@@ -88,7 +88,7 @@ export function App() {
 
       <section className="hero">
         <div className="message">
-          <p className="eyebrow">Idea clave / optimizacion</p>
+          <p className="eyebrow">Proyecto final - Optimizador de imagenes</p>
           <h1>
             La misma imagen,
             <br />
