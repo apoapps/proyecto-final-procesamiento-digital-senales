@@ -13,6 +13,7 @@
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage[hidelinks]{hyperref}
+\usepackage[section]{placeins}
 \graphicspath{{../assets/screens/}{../fixtures/}}
 
 \title{\textbf{Proyecto Final de Procesamiento Digital de Señales}\\
@@ -103,7 +104,7 @@ La metodología aplicada fue la siguiente:
   \item Mostrar al usuario solo las métricas más importantes para la decisión: original, optimizada y ahorro.
 \end{enumerate}
 
-Esta metodología cumple con la rúbrica porque define variables, aplica un método de investigación, ejecuta un experimento reproducible y permite interpretar los datos obtenidos.
+Esta metodología define variables, aplica un método de investigación, ejecuta un experimento reproducible y permite interpretar los datos obtenidos.
 
 \section{Diseño experimental}
 Para validar el prototipo se usó una imagen de prueba reproducible incluida en el repositorio como \texttt{fixture-1.png}. Las variables controladas fueron:
@@ -151,7 +152,7 @@ PSNR & 36.2 dB\\
 El patrón principal es claro: la reducción de resolución y la compresión JPEG disminuyen drásticamente el peso del archivo. Esto responde directamente al concepto de la página: \textbf{la misma imagen puede ser mucho más liviana}. Para un usuario no técnico, el porcentaje de ahorro es la métrica más importante. Para justificarlo técnicamente, el reporte conserva las métricas de DSP y modelo de datos.
 
 \section{Predicción y modelización}
-La rúbrica 24ICE05 pide incluir predicción y modelización en problemas de ingeniería. En este proyecto se modeló la expansión base64 con la regla:
+Además de medir el tamaño final, se modeló la expansión base64 con la regla:
 \[
 B_{64} = 4\left\lceil\frac{B}{3}\right\rceil
 \]
@@ -174,32 +175,6 @@ El proyecto también reconoce límites importantes:
 \end{itemize}
 
 Para reducir estas limitaciones se podrían agregar validaciones futuras como OCR para texto pequeño, SSIM para comparación perceptual y pruebas con modelos multimodales reales.
-
-\section{Alineación con las rúbricas}
-\subsection{24ICE04: investigación de problemas de ingeniería complejos}
-El reporte cumple con 24ICE04 porque identifica un problema real, justifica su relevancia, plantea preguntas de investigación, selecciona métodos adecuados, aplica un experimento, analiza datos y genera conclusiones válidas. El problema no se trata solo como una página web, sino como una decisión de ingeniería: cuánto peso se reduce y qué costo técnico se evita.
-
-\subsection{24ICE05: herramientas modernas de ingeniería y TI}
-El reporte cumple con 24ICE05 porque se creó una herramienta moderna de TI usando React, TypeScript y procesamiento en navegador. La herramienta se seleccionó porque permite transformar la imagen antes de enviarla al servidor. También se reconocen limitaciones técnicas y se usan modelos para predecir ahorro de bytes y expansión base64.
-
-\begin{table}[H]
-\centering
-\small
-\caption{Resumen de cumplimiento.}
-\begin{tabular}{p{0.28\linewidth} p{0.62\linewidth}}
-\toprule
-Criterio & Evidencia\\
-\midrule
-Definición del problema & Imágenes pesadas aumentan costo de envío a chats o sistemas de IA.\\
-Método de investigación & Remuestreo, JPEG, medición de bytes, MSE y PSNR.\\
-Diseño experimental & Fixture reproducible, calidad fija, dimensión máxima y métricas de respuesta.\\
-Análisis de datos & Comparación entre tamaño original, tamaño optimizado y ahorro.\\
-Herramienta moderna & Aplicación web con Vite, React, TypeScript y Canvas.\\
-Modelización & Fórmulas para ahorro porcentual y expansión base64.\\
-Limitaciones & Transparencia, texto pequeño, PSNR, formatos del navegador y modelo aproximado.\\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \section{Conclusiones}
 El proyecto demuestra que aplicar procesamiento digital de señales a imágenes puede resolver un problema actual: reducir el peso de archivos antes de enviarlos a sistemas de IA. Con una configuración simple de 1280 px y calidad JPEG de 72\%, la prueba obtuvo un ahorro de 84.1\%. La interfaz final se mantuvo deliberadamente simple para que cualquier persona entienda el beneficio sin conocer MSE, PSNR o base64.
