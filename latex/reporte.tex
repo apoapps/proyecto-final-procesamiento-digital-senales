@@ -1,103 +1,145 @@
-\documentclass[journal, a4paper]{IEEEtran}
-\raggedbottom
+\documentclass[12pt,letterpaper]{article}
 \usepackage{fontspec}
 \usepackage{polyglossia}
 \setmainlanguage{spanish}
 \setmainfont{Arial}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\setlength{\emergencystretch}{2em}
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage[hidelinks]{hyperref}
 \graphicspath{{../assets/screens/}{../fixtures/}}
 
-\title{Proyecto Final: Transformador de imágenes para contexto LLM}
+\title{\textbf{Proyecto Final de Procesamiento Digital de Señales}\\
+Transformador de imágenes para hacerlas más livianas antes de enviarlas a IA}
 \author{
-Alejandro Apodaca Cordova, \textit{Matrícula: m041852}\\
-Gael Calderon Robles, \textit{Matrícula: m042449}\\
+Alejandro Apodaca Córdova --- Matrícula m041852\\
+Gael Calderón Robles --- Matrícula m042449\\
 Ingeniería Mecatrónica, CETYS Universidad, Campus Mexicali
 }
+\date{\today}
 
 \begin{document}
 \maketitle
 
-\begin{abstract}
-En este proyecto se desarrolló un prototipo web de procesamiento digital de señales para convertir imágenes de entrada a JPG comprimido antes de subirlas a una aplicación de chat con modelos LLM. El sistema adquiere imágenes reales en el navegador, remuestrea su resolución, aplica una transformación opcional a luminancia, codifica la salida en JPEG y calcula métricas de ahorro y fidelidad. La herramienta permite justificar técnicamente cuántos recursos se reducen antes de enviar archivos a un servidor, usando bytes, expansión base64, error cuadrático medio y PSNR como indicadores.
-\end{abstract}
+\section*{Resumen}
+El proyecto consiste en una página web que toma una imagen original y genera una versión JPG más liviana para enviarla a un chat o sistema de inteligencia artificial. La idea principal se resume así: \textit{la misma imagen visual, menos peso}. El sistema procesa la imagen en el navegador, reduce su dimensión máxima, la comprime como JPEG y muestra tres datos fáciles de entender: tamaño original, tamaño optimizado y porcentaje de ahorro. Aunque la interfaz final es simple, el funcionamiento interno aplica conceptos de procesamiento digital de señales: adquisición de una señal visual, remuestreo espacial, codificación con pérdida, medición de error y modelización del ahorro.
 
-\begin{IEEEkeywords}
-procesamiento digital de imágenes, compresión JPEG, remuestreo, PSNR, aplicaciones LLM, herramientas web.
-\end{IEEEkeywords}
+\section{Problema de investigación}
+Muchas aplicaciones modernas permiten subir imágenes a modelos de IA. El problema es que una imagen tomada con un teléfono puede pesar varios megabytes, aunque para explicar una idea en un chat no siempre se necesita toda esa resolución. Enviar imágenes pesadas aumenta el tiempo de carga, el ancho de banda y el tamaño de los datos si la imagen se convierte a base64 para transmitirse por una API.
 
-\section{Introducción}
-Las aplicaciones actuales de chat multimodal permiten adjuntar imágenes para análisis, soporte técnico o documentación. Sin embargo, las cámaras de teléfonos y computadoras generan archivos con resoluciones mayores a las necesarias para muchas consultas. Subir esas imágenes sin procesamiento previo aumenta el ancho de banda, el almacenamiento temporal, el tiempo de transferencia y el tamaño de los mensajes cuando la imagen se transforma a base64 para una API.
+Por eso se plantea el siguiente problema de investigación: \textbf{¿cómo reducir el peso de una imagen antes de enviarla a un sistema de IA, manteniendo una versión visualmente útil para el usuario?}
 
-El problema de ingeniería consiste en reducir el costo de transmisión sin destruir la información visual que necesita el modelo. Para resolverlo se implementó una herramienta web que procesa la imagen localmente, antes de que llegue al servidor. La justificación principal es que una imagen digital es una señal discreta bidimensional; por lo tanto, su compresión puede estudiarse con fundamentos de procesamiento digital de señales: muestreo, cuantización, transformación de color, codificación con pérdida y medición de error.
+Las variables principales del problema son:
+\begin{itemize}
+  \item Tamaño original de la imagen, medido en bytes.
+  \item Tamaño de la imagen optimizada, medido en bytes.
+  \item Porcentaje de ahorro.
+  \item Dimensión máxima permitida después del remuestreo.
+  \item Calidad JPEG usada para la compresión.
+  \item Error entre la imagen procesada y la imagen codificada.
+\end{itemize}
+
+La relevancia del problema está en que optimizar imágenes antes de subirlas reduce recursos de red y mejora la experiencia de uso. En ingeniería, esto permite tomar una decisión técnica con datos y no solo con percepción visual.
+
+\section{Preguntas de investigación}
+Para guiar el proyecto se definieron tres preguntas:
+\begin{enumerate}
+  \item ¿Cuánto peso se puede ahorrar al remuestrear una imagen y codificarla como JPEG?
+  \item ¿Cómo mostrar ese ahorro de forma simple?
+  \item ¿Qué limitaciones aparecen cuando se usa compresión JPEG para preparar imágenes destinadas a sistemas de IA?
+\end{enumerate}
 
 \section{Marco teórico}
-Una imagen digital puede representarse como una función discreta \(x[m,n]\), donde \(m\) y \(n\) son coordenadas espaciales y cada muestra contiene intensidad o color. Cuando se reduce la dimensión máxima de una imagen, se disminuye el número total de muestras. Este proceso es un remuestreo espacial y modifica directamente la cantidad de información que debe almacenarse o transmitirse.
+Una imagen digital puede entenderse como una señal discreta bidimensional \(x[m,n]\). Cada coordenada representa una muestra espacial y cada muestra contiene información de color. Cuando se reduce la resolución de la imagen, se reduce el número total de muestras. Este proceso se conoce como remuestreo espacial.
 
-La conversión opcional a luminancia usa el modelo perceptual:
+El prototipo también puede convertir la imagen a luminancia usando:
 \[
 Y = 0.299R + 0.587G + 0.114B
 \]
-Con esto se conserva principalmente la información de brillo y se elimina la dependencia del color cuando la aplicación no lo requiere. Después se codifica la imagen en JPEG. Aunque el navegador abstrae internamente la transformada discreta del coseno y las tablas de cuantización, el parámetro de calidad controla la pérdida introducida por la cuantización.
+Esta operación resume la información de color en brillo, lo cual puede ser útil cuando el color no es esencial para el análisis.
 
-Para evaluar la fidelidad, se compara la imagen remuestreada de referencia contra el JPEG decodificado. El error cuadrático medio se calcula como:
+Después del remuestreo, la imagen se codifica como JPEG. JPEG usa compresión con pérdida: reduce información para obtener un archivo más pequeño. Para medir el error se calcula el error cuadrático medio:
 \[
 MSE = \frac{1}{N}\sum_{i=1}^{N}(x_i-\hat{x}_i)^2
 \]
-y el PSNR como:
+y la relación señal a ruido pico:
 \[
 PSNR = 10\log_{10}\left(\frac{255^2}{MSE}\right)
 \]
-Un PSNR mayor indica menor degradación numérica. En este proyecto no se interpreta solo: se combina con el ahorro de bytes, porque una compresión extrema puede ahorrar recursos pero perder detalles relevantes para el usuario o para el modelo.
+En la interfaz final no se muestra PSNR para no confundir al usuario, pero sí se calcula internamente y se usa como evidencia técnica en el reporte.
 
-\section{Enunciado del proyecto}
-El proyecto final solicita desarrollar un sistema basado en técnicas de procesamiento digital de señales que permita adquirir, analizar, filtrar, transformar o interpretar señales reales utilizando herramientas computacionales y fundamentos teóricos de DSP. A partir de ese objetivo se planteó la siguiente aplicación: un transformador de imágenes para chats LLM que convierta varios formatos de imagen a JPG comprimido antes de subirlos a un servidor.
+\section{Herramienta moderna desarrollada}
+Se creó una aplicación web con Vite, React, TypeScript y Tailwind CSS. La herramienta funciona en el navegador, por lo que la imagen se transforma antes de llegar a un servidor. Esto es importante porque el objetivo del proyecto no es solo comprimir una imagen, sino evitar que una imagen innecesariamente pesada sea enviada a una aplicación de IA.
 
-Las rúbricas 24ICE04 y 24ICE05 fueron revisadas y se conservaron dentro del repositorio en \texttt{docs/rubricas/24ICE04.docx} y \texttt{docs/rubricas/24ICE05.docx}. Por eso el reporte incluye definición del problema, método, experimento, análisis, conclusiones, herramienta moderna, modelización y limitaciones.
-
-La herramienta busca responder tres preguntas de investigación:
-\begin{enumerate}
-\item ¿Cuánto peso se reduce al remuestrear una imagen y codificarla como JPEG?
-\item ¿Qué costo aproximado se evita cuando una imagen se serializa en base64 para una aplicación web?
-\item ¿Qué pérdida numérica introduce la compresión bajo una configuración dada?
-\end{enumerate}
-
-\section{Desarrollo}
-El prototipo se implementó con Vite, React, TypeScript y Tailwind CSS para que sea publicable como página web estática. La cadena de procesamiento se ejecuta completamente en el navegador:
-\begin{enumerate}
-\item El usuario carga una o varias imágenes mediante selector o arrastre.
-\item El navegador decodifica la imagen y registra tipo, resolución y bytes originales.
-\item Se calcula una escala para limitar el lado mayor a una dimensión máxima configurable.
-\item La imagen se dibuja en un \texttt{canvas}, lo cual realiza el remuestreo espacial.
-\item Opcionalmente se aplica la transformación RGB a luminancia.
-\item El \texttt{canvas} se codifica como \texttt{image/jpeg} con calidad configurable.
-\item El JPG generado se decodifica otra vez para calcular MSE y PSNR contra la referencia.
-\item La interfaz muestra ahorro de bytes, relación de compresión, ahorro base64 y descarga del JPG final.
-\end{enumerate}
-
-El modelo de ahorro considera que base64 expande el binario aproximadamente a \(4/3\). Para estimar unidades de contexto se divide el tamaño base64 entre cuatro caracteres por unidad. Esta aproximación no sustituye el conteo interno de ningún proveedor de LLM, pero sí sirve para comparar de forma reproducible la reducción relativa entre imagen original e imagen comprimida.
+La interfaz final se diseñó para ser muy simple:
+\begin{itemize}
+  \item El usuario sube una imagen.
+  \item La página genera una versión optimizada.
+  \item Se muestran tres métricas: original, optimizada y ahorro.
+  \item El usuario puede descargar el JPG final.
+\end{itemize}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\linewidth]{app_desktop.png}
-\caption{Prototipo web ejecutado en escritorio con una imagen de prueba procesada.}
+\includegraphics[width=0.95\linewidth]{app_desktop.png}
+\caption{Interfaz web del transformador de imágenes.}
 \end{figure}
 
+\section{Metodología}
+La metodología aplicada fue la siguiente:
+\begin{enumerate}
+  \item Adquirir una imagen real desde el navegador mediante carga de archivo.
+  \item Decodificar la imagen y registrar sus dimensiones y bytes originales.
+  \item Remuestrear la imagen para limitar su lado mayor a 1280 pixeles.
+  \item Codificar la imagen resultante como JPEG con calidad 72\%.
+  \item Comparar el tamaño original contra el tamaño optimizado.
+  \item Calcular porcentaje de ahorro, expansión base64 evitada, MSE y PSNR.
+  \item Mostrar al usuario solo las métricas más importantes para la decisión: original, optimizada y ahorro.
+\end{enumerate}
+
+Esta metodología cumple con la rúbrica porque define variables, aplica un método de investigación, ejecuta un experimento reproducible y permite interpretar los datos obtenidos.
+
+\section{Diseño experimental}
+Para validar el prototipo se usó una imagen de prueba reproducible incluida en el repositorio como \texttt{fixture-1.png}. Las variables controladas fueron:
+
+\begin{itemize}
+  \item Calidad JPEG: 72\%.
+  \item Dimensión máxima: 1280 px.
+  \item Formato de salida: JPG.
+  \item Procesamiento local en navegador.
+\end{itemize}
+
+Las variables de respuesta fueron:
+\begin{itemize}
+  \item Tamaño original.
+  \item Tamaño optimizado.
+  \item Porcentaje de ahorro.
+  \item Relación de compresión.
+  \item Base64 evitado.
+  \item PSNR.
+\end{itemize}
+
 \section{Resultados}
-En la prueba reproducible con \texttt{fixture-1.png}, el sistema procesó una imagen de \(1600\times1000\) pixeles y la remuestreó a \(1280\times800\) pixeles usando calidad JPEG del 72\%. El archivo pasó de 572 KB a 91 KB, con ahorro de 84.1\%, relación de compresión de 6.31x y PSNR de 36.2 dB. Además, el modelo estimó 642 KB de base64 evitado y 164,243 unidades aproximadas de contexto ahorradas.
+Con la imagen de prueba, el sistema obtuvo los resultados de la Tabla \ref{tab:resultados}. El caso demuestra que una imagen puede mantenerse útil visualmente y reducirse de forma considerable para transporte digital.
 
 \begin{table}[H]
 \centering
-\caption{Resumen de la verificación del prototipo.}
-\begin{tabular}{l c}
+\caption{Resultados de la prueba reproducible con \texttt{fixture-1.png}.}
+\label{tab:resultados}
+\begin{tabular}{l r}
 \toprule
 Métrica & Resultado\\
 \midrule
+Resolución original & \(1600\times1000\) px\\
+Resolución optimizada & \(1280\times800\) px\\
 Tamaño original & 572 KB\\
-Tamaño JPG & 91 KB\\
+Tamaño optimizado JPG & 91 KB\\
 Ahorro directo & 84.1\%\\
 Relación de compresión & 6.31x\\
 Base64 evitado & 642 KB\\
@@ -106,53 +148,74 @@ PSNR & 36.2 dB\\
 \end{tabular}
 \end{table}
 
-También se revisó la interfaz en una vista móvil. Los controles principales permanecieron accesibles y las métricas se acomodaron en una cuadrícula de dos columnas, manteniendo el mismo estilo visual compacto usado en las prácticas previas: resultados visibles, explicación técnica breve y evidencia reproducible.
+El patrón principal es claro: la reducción de resolución y la compresión JPEG disminuyen drásticamente el peso del archivo. Esto responde directamente al concepto de la página: \textbf{la misma imagen puede ser mucho más liviana}. Para un usuario no técnico, el porcentaje de ahorro es la métrica más importante. Para justificarlo técnicamente, el reporte conserva las métricas de DSP y modelo de datos.
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.48\linewidth]{app_mobile.png}
-\caption{Verificación móvil de la herramienta.}
-\end{figure}
+\section{Predicción y modelización}
+La rúbrica 24ICE05 pide incluir predicción y modelización en problemas de ingeniería. En este proyecto se modeló la expansión base64 con la regla:
+\[
+B_{64} = 4\left\lceil\frac{B}{3}\right\rceil
+\]
+donde \(B\) es el tamaño en bytes del archivo binario. Este modelo predice cuánto crece una imagen al serializarse para transporte textual en una API.
 
-\section{Alineación con 24ICE04 y 24ICE05}
-Para 24ICE04, el proyecto identifica un problema de ingeniería concreto: el costo de subir imágenes sin optimización a chats LLM. La metodología incluye variables controlables, como calidad JPEG, dimensión máxima y luminancia, y variables de respuesta, como bytes comprimidos, PSNR y ahorro base64. El experimento permite analizar patrones y formular conclusiones sobre el balance entre fidelidad y recursos.
+También se modeló el porcentaje de ahorro:
+\[
+Ahorro = \frac{B_{original} - B_{optimizado}}{B_{original}}\times100
+\]
+Con este modelo la aplicación puede informar al usuario cuántos recursos se reducen antes de subir la imagen.
 
-Para 24ICE05, el proyecto crea y aplica una herramienta moderna de ingeniería y TI. La selección de Vite, React, TypeScript y procesamiento en navegador se justifica porque permite publicar la solución en la web y evitar que imágenes pesadas lleguen al servidor antes de transformarse. Las limitaciones técnicas también se reconocen: JPEG no conserva transparencia, la compatibilidad de formatos depende del navegador y PSNR no garantiza por sí solo que un LLM interprete igual la imagen comprimida.
+\section{Limitaciones técnicas}
+El proyecto también reconoce límites importantes:
+\begin{itemize}
+  \item JPEG no conserva transparencia; una imagen PNG con canal alfa puede cambiar visualmente.
+  \item La compresión puede afectar texto pequeño o detalles finos.
+  \item PSNR mide diferencia numérica, pero no garantiza que un modelo de IA interprete exactamente igual la imagen.
+  \item La compatibilidad de formatos depende del navegador.
+  \item El modelo de unidades de contexto es una aproximación, no el conteo interno de un proveedor específico de IA.
+\end{itemize}
+
+Para reducir estas limitaciones se podrían agregar validaciones futuras como OCR para texto pequeño, SSIM para comparación perceptual y pruebas con modelos multimodales reales.
+
+\section{Alineación con las rúbricas}
+\subsection{24ICE04: investigación de problemas de ingeniería complejos}
+El reporte cumple con 24ICE04 porque identifica un problema real, justifica su relevancia, plantea preguntas de investigación, selecciona métodos adecuados, aplica un experimento, analiza datos y genera conclusiones válidas. El problema no se trata solo como una página web, sino como una decisión de ingeniería: cuánto peso se reduce y qué costo técnico se evita.
+
+\subsection{24ICE05: herramientas modernas de ingeniería y TI}
+El reporte cumple con 24ICE05 porque se creó una herramienta moderna de TI usando React, TypeScript y procesamiento en navegador. La herramienta se seleccionó porque permite transformar la imagen antes de enviarla al servidor. También se reconocen limitaciones técnicas y se usan modelos para predecir ahorro de bytes y expansión base64.
 
 \begin{table}[H]
 \centering
 \small
-\caption{Matriz de cumplimiento de la rúbrica.}
-\begin{tabular}{p{0.22\linewidth} p{0.66\linewidth}}
+\caption{Resumen de cumplimiento.}
+\begin{tabular}{p{0.28\linewidth} p{0.62\linewidth}}
 \toprule
-Criterio & Evidencia en el proyecto\\
+Criterio & Evidencia\\
 \midrule
-Problema y relevancia & Se define el costo de subir imágenes crudas a un chat LLM y se justifica por ancho de banda, memoria, base64 y contexto.\\
-Preguntas de investigación & Se plantean preguntas sobre ahorro, expansión base64 y pérdida numérica por compresión.\\
-Método DSP & Se aplica remuestreo espacial, luminancia opcional, cuantización JPEG, MSE y PSNR.\\
-Diseño experimental & Los parámetros controlables son calidad JPEG, dimensión máxima y luminancia; las respuestas medidas son bytes, PSNR, MSE y contexto estimado.\\
-Análisis de datos & La interfaz y el reporte muestran bytes originales, bytes JPG, ahorro, relación de compresión, base64 evitado y PSNR.\\
-Herramienta moderna & Se creó una app web con Vite, React, TypeScript y Tailwind, desplegada en Vercel y versionada en GitHub.\\
-Limitaciones & Se documenta que JPEG no conserva transparencia, la compatibilidad depende del navegador y PSNR no sustituye validación semántica con un LLM real.\\
-Mejoras & Se proponen OCR, SSIM y pruebas con modelos multimodales reales.\\
+Definición del problema & Imágenes pesadas aumentan costo de envío a chats o sistemas de IA.\\
+Método de investigación & Remuestreo, JPEG, medición de bytes, MSE y PSNR.\\
+Diseño experimental & Fixture reproducible, calidad fija, dimensión máxima y métricas de respuesta.\\
+Análisis de datos & Comparación entre tamaño original, tamaño optimizado y ahorro.\\
+Herramienta moderna & Aplicación web con Vite, React, TypeScript y Canvas.\\
+Modelización & Fórmulas para ahorro porcentual y expansión base64.\\
+Limitaciones & Transparencia, texto pequeño, PSNR, formatos del navegador y modelo aproximado.\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\section{Conclusión}
-El prototipo demuestra que las técnicas de procesamiento digital de señales pueden aplicarse directamente a una necesidad actual de aplicaciones con IA. El sistema adquiere señales visuales reales, las transforma mediante remuestreo y codificación JPEG, analiza su error y cuantifica el ahorro de recursos. La configuración inicial recomendada es dimensión máxima de 1280 px y calidad JPEG entre 70\% y 80\%, porque en la prueba realizada produjo una reducción superior al 80\% con PSNR aceptable para contexto visual general.
+\section{Conclusiones}
+El proyecto demuestra que aplicar procesamiento digital de señales a imágenes puede resolver un problema actual: reducir el peso de archivos antes de enviarlos a sistemas de IA. Con una configuración simple de 1280 px y calidad JPEG de 72\%, la prueba obtuvo un ahorro de 84.1\%. La interfaz final se mantuvo deliberadamente simple para que cualquier persona entienda el beneficio sin conocer MSE, PSNR o base64.
 
-Como mejora futura se puede agregar detección automática de texto pequeño, OCR de validación, comparación perceptual SSIM y pruebas directas con modelos multimodales para confirmar que la compresión no afecta la respuesta semántica del chat. Aun así, la herramienta ya cumple el objetivo de transformar imágenes antes de subirlas y ofrece métricas claras para tomar decisiones de ingeniería.
+La conclusión principal es que la optimización local permite ahorrar recursos sin complicar la experiencia del usuario. El valor del proyecto está en unir una técnica de DSP con una necesidad moderna de aplicaciones web e inteligencia artificial.
 
-\onecolumn
-\section{Código y repositorio}
-El código fuente está organizado como una aplicación web publicable. Los módulos principales son:
-\begin{itemize}
-\item \texttt{src/App.tsx}: interfaz, controles y presentación de métricas.
-\item \texttt{src/imageProcessing.ts}: remuestreo, luminancia, codificación JPEG, MSE y PSNR.
-\item \texttt{src/metrics.ts}: cálculo de ahorro, base64 y unidades aproximadas de contexto.
-\item \texttt{scripts/verify-metrics.mjs}: verificación reproducible del modelo de ahorro.
-\end{itemize}
+\section{Reflexión sobre la competencia evaluada}
+La competencia 24ICE04 se relaciona con investigar problemas complejos de ingeniería y obtener conclusiones válidas a partir de datos. En este proyecto se practicó esa competencia al definir un problema, controlar variables, medir resultados e interpretar el ahorro obtenido.
+
+La competencia 24ICE05 se relaciona con crear, seleccionar, aplicar y reconocer limitaciones de herramientas modernas de ingeniería y TI. En este proyecto se aplicó al construir una herramienta web funcional, seleccionar tecnologías adecuadas y reconocer que la compresión JPEG no siempre es suficiente para todos los casos. La reflexión final es que una herramienta moderna no debe ser complicada para ser útil: debe resolver un problema real, mostrar datos claros y reconocer sus límites.
+
+\section*{Repositorio}
+El código fuente se encuentra en:
+\[
+\texttt{https://github.com/apoapps/proyecto-final-procesamiento-digital-senales}
+\]
 
 \begin{thebibliography}{9}
 \bibitem{gonzalez} R. C. Gonzalez y R. E. Woods, \textit{Digital Image Processing}. Pearson.

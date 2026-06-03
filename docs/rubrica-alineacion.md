@@ -1,52 +1,53 @@
 # Cumplimiento de rúbricas 24ICE04 y 24ICE05
 
-Proyecto: transformador web de imágenes para comprimir y convertir a JPG antes de subirlas a una aplicación de chat LLM.
+Proyecto: transformador web de imágenes para hacerlas más livianas antes de enviarlas a un chat o sistema de IA.
 
 Integrantes:
 
-- Alejandro Apodaca Cordova, m041852
-- Gael Calderon Robles, m042449
+- Alejandro Apodaca Córdova, m041852
+- Gael Calderón Robles, m042449
 
-Rúbricas revisadas y guardadas en este repositorio:
+Rúbricas revisadas:
 
 - `docs/rubricas/24ICE04.docx`
 - `docs/rubricas/24ICE05.docx`
 
+## Concepto final
+
+La interfaz final comunica una sola idea: **la misma imagen, % más liviana**.
+
+La app no muestra todos los indicadores técnicos para no confundir al usuario. El reporte conserva la explicación de DSP, MSE, PSNR, base64 y limitaciones para cumplir la rúbrica.
+
 ## 24ICE04: investigación de problemas de ingeniería complejos
 
-| Criterio | Como se cumple en el proyecto | Evidencia |
+| Criterio | Cómo se cumple | Evidencia |
 | --- | --- | --- |
-| Definición clara del problema | Se define el costo técnico de subir imágenes crudas a un chat LLM: ancho de banda, memoria, base64 y contexto. | Reporte: Introducción y Enunciado. UI: story "Entrada pesada". |
-| Justificación de relevancia | El problema se conecta con aplicaciónes reales de IA multimodal y uso de servidores. | Reporte: Introducción. |
-| Preguntas de investigación | Se formulan preguntas sobre ahorro, base64 evitado y pérdida numerica por compresión. | Reporte: Enunciado del proyecto. |
-| Selección de método | Se selecciona remuestreo espacial, luminancia opcional, JPEG, MSE y PSNR. | `src/imageProcessing.ts`; Reporte: Marco teórico. |
-| Justificación del método | Cada técnica se justifica como operación DSP sobre una señal visual discreta. | Reporte: Marco teórico y Desarrollo. |
-| Aplicación efectiva | El navegador procesa imágenes reales y genera JPG descargable. | App Vite desplegada; prueba con `fixture-1.png`. |
-| Diseño experimental | Variables controlables: calidad JPEG, dimensión máxima, luminancia. Variables respuesta: bytes, PSNR, base64. | UI de parámetros; Reporte: Desarrollo. |
-| Análisis e interpretación | Se reportan ahorro porcentual, relación de compresión, PSNR y contexto estimado. | UI: Telemetría; Reporte: Resultados. |
-| Identificacion de patrones | Se interpreta el balance entre ahorro y degradacion. | Reporte: Resultados y Conclusión. |
-| Conclusiónes validas | Se recomienda configuracion inicial y se explican condiciones donde debe ajustarse. | Reporte: Conclusión. |
-| Limitaciones | Se reconocen límites de JPEG, compatibilidad de formatos y PSNR semantico. | Reporte: Alineacion y Conclusión. |
+| Definición clara del problema | Se define el costo de enviar imágenes pesadas a sistemas de IA. | Reporte: problema de investigación. |
+| Justificación de relevancia | El problema afecta ancho de banda, tiempo de carga y tamaño de datos. | Reporte: problema y conclusiones. |
+| Preguntas de investigación | Se pregunta cuánto peso se ahorra, cómo comunicarlo y qué límites tiene JPEG. | Reporte: preguntas de investigación. |
+| Método apropiado | Se usa remuestreo, JPEG, medición de bytes, MSE y PSNR. | `src/imageProcessing.ts`; reporte: metodología. |
+| Diseño experimental | Se fija calidad 72%, dimensión máxima 1280 px y fixture reproducible. | Reporte: diseño experimental. |
+| Análisis e interpretación | Se reporta 84.1% de ahorro y relación de compresión 6.31x. | Reporte: resultados. |
+| Conclusiones válidas | Se concluye que la optimización local reduce recursos sin complicar la UX. | Reporte: conclusiones. |
+| Limitaciones | Se reconocen transparencia, texto pequeño, PSNR y compatibilidad de navegador. | Reporte: limitaciones. |
+| Conocimiento basado en literatura | Se citan procesamiento de imágenes, señales discretas, JPEG y Canvas. | Reporte: bibliografía. |
 
 ## 24ICE05: herramientas modernas de ingeniería y TI
 
-| Criterio | Como se cumple en el proyecto | Evidencia |
+| Criterio | Cómo se cumple | Evidencia |
 | --- | --- | --- |
-| Crear herramienta moderna | Se crea una app web publicable con React, Vite, TypeScript y Tailwind. | `package.json`, `src/`, despliegue Vercel. |
-| Selecciónar herramienta moderna | Se eligio navegador/Canvas para comprimir antes del servidor y evitar transferencia innecesaria. | Reporte: Desarrollo. |
-| Aplicar y evaluar herramientas | La app procesa imágenes, mide resultados y permite descargar la salida. | UI funcional; `npm run build`; verificación Playwright. |
-| Metodologia apropiada | Flujo reproducible: adquirir, remuestrear, codificar, decodificar, medir, reportar. | `src/imageProcessing.ts`; Reporte: Desarrollo. |
-| Identificar limitaciones técnicas | Se documentan transparencia, animación, compatibilidad del navegador y límite de PSNR. | Reporte: Alineacion y Conclusión. |
-| Comprender impacto de limitaciones | Se explica cuando bajar calidad puede afectar texto pequeno o detalles finos. | Reporte: Resultados y Conclusión. |
-| Proponer mejoras | OCR, SSIM y pruebas con modelos multimodales reales. | Reporte: Conclusión. |
-| Prediccion/modelizacion | Se modela base64 como expansion 4/3 y unidades de contexto aproximadas. | `src/metrics.ts`; UI: Telemetría. |
-| Interpretacion del modelo | El modelo se usa para comparar escenarios, no como conteo propietario definitivo. | Reporte: Desarrollo. |
+| Crear herramienta moderna | Se construyó una app web funcional. | `src/`, `package.json`. |
+| Seleccionar herramienta adecuada | Se eligió navegador/Canvas para optimizar antes del servidor. | Reporte: herramienta moderna. |
+| Aplicar y evaluar herramienta | La app procesa una imagen, muestra ahorro y descarga JPG. | UI final; `npm run build`. |
+| Metodología de creación | Flujo: adquirir, remuestrear, codificar, medir, reportar. | Reporte: metodología. |
+| Limitaciones técnicas | Se describen límites de JPEG, formato y PSNR. | Reporte: limitaciones. |
+| Propuestas de mejora | OCR, SSIM y pruebas con modelos multimodales reales. | Reporte: limitaciones y reflexión. |
+| Predicción/modelización | Se modela ahorro porcentual y expansión base64. | Reporte: predicción y modelización. |
+| Interpretación del modelo | El modelo se usa para comparar ahorro relativo, no como conteo propietario exacto. | Reporte: predicción y modelización. |
 
-## Verificaciones realizadas
+## Verificaciones
 
-- `npm run verify`
-- `npm run fixtures`
 - `npm run build`
 - `tectonic latex/reporte.tex`
-- Prueba de navegador con imagen fixture.
-- Deploy de produccion en Vercel.
+- Revisión de rúbricas DOCX por extracción de texto.
+- App publicada/actualizable desde el repositorio de GitHub.
