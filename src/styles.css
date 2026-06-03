@@ -7,10 +7,10 @@
   --background: #ffffff;
   --foreground: #0a0a0a;
   --muted: #f4f4f2;
-  --line: #e4e4df;
+  --line: #0a0a0a;
   --soft: #737373;
-  --accent: #12c9a7;
-  --accent-soft: #dffaf4;
+  --accent: #8b5cf6;
+  --accent-soft: #eee7ff;
   background: var(--background);
   color: var(--foreground);
   font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
@@ -35,7 +35,10 @@ body {
   margin: 0;
   min-width: 320px;
   overflow: hidden;
-  background: var(--background);
+  background:
+    linear-gradient(90deg, rgba(10, 10, 10, 0.035) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(0deg, rgba(10, 10, 10, 0.035) 1px, transparent 1px) 0 0 / 32px 32px,
+    var(--background);
 }
 
 button,
@@ -64,6 +67,7 @@ button:disabled {
   overflow: hidden;
   background: var(--background);
   color: var(--foreground);
+  animation: page-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .topbar {
@@ -71,7 +75,7 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   min-width: 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 2px solid var(--line);
   padding: 0 1rem;
 }
 
@@ -100,10 +104,10 @@ button:disabled {
 }
 
 .topbar button {
-  border: 0;
-  border-bottom: 1px solid transparent;
-  background: transparent;
-  padding: 0.2rem 0;
+  border: 2px solid var(--foreground);
+  background: var(--background);
+  box-shadow: 3px 3px 0 var(--foreground);
+  padding: 0.35rem 0.55rem;
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -111,14 +115,15 @@ button:disabled {
 }
 
 .topbar button:hover:not(:disabled) {
-  border-color: var(--foreground);
+  background: var(--accent);
+  transform: translate(-2px, -2px);
 }
 
 .hero {
   display: grid;
   min-height: 0;
   grid-template-columns: minmax(20rem, 0.88fr) minmax(0, 1.12fr);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 2px solid var(--line);
 }
 
 .message {
@@ -127,8 +132,9 @@ button:disabled {
   min-height: 0;
   flex-direction: column;
   justify-content: center;
-  border-right: 1px solid var(--line);
+  border-right: 2px solid var(--line);
   padding: clamp(1.4rem, 4vw, 4rem);
+  background: var(--background);
 }
 
 .eyebrow {
@@ -169,6 +175,18 @@ h1 em {
   line-height: 1.55;
 }
 
+.credits {
+  max-width: 28rem;
+  margin: 1rem 0 0;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  color: var(--foreground);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.55;
+  text-transform: uppercase;
+}
+
 .upload-card {
   position: relative;
   display: block;
@@ -177,19 +195,22 @@ h1 em {
   cursor: pointer;
   overflow: hidden;
   background: var(--muted);
+  border-left: 0;
 }
 
 .upload-card::before {
   position: absolute;
   inset: 1rem;
-  border: 1px dashed #c9c9c4;
+  border: 2px dashed var(--foreground);
   content: "";
   pointer-events: none;
-  transition: border-color 160ms ease;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .upload-card.is-dragging::before {
   border-color: var(--accent);
+  box-shadow: 8px 8px 0 var(--accent);
+  transform: translate(-4px, -4px);
 }
 
 .empty-upload {
@@ -208,6 +229,9 @@ h1 em {
   margin-bottom: 1.2rem;
   background: var(--accent);
   color: var(--foreground);
+  border: 2px solid var(--foreground);
+  box-shadow: 6px 6px 0 var(--foreground);
+  animation: pulse 1.8s ease-in-out infinite;
 }
 
 .empty-upload strong {
@@ -232,6 +256,7 @@ h1 em {
   height: 100%;
   grid-template-columns: 1fr 1fr;
   min-height: 0;
+  animation: pop-in 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .preview {
@@ -243,7 +268,7 @@ h1 em {
 }
 
 .preview:first-child {
-  border-right: 1px solid var(--line);
+  border-right: 2px solid var(--line);
 }
 
 .preview img {
@@ -261,7 +286,7 @@ h1 em {
   justify-content: space-between;
   gap: 0.75rem;
   min-width: 0;
-  border-top: 1px solid var(--line);
+  border-top: 2px solid var(--line);
   background: var(--background);
   padding: 0 1rem;
 }
@@ -289,7 +314,7 @@ h1 em {
   display: grid;
   min-width: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(11rem, auto);
-  border-top: 1px solid var(--line);
+  border-top: 2px solid var(--line);
   background: var(--background);
 }
 
@@ -298,7 +323,7 @@ h1 em {
   min-width: 0;
   flex-direction: column;
   justify-content: center;
-  border-right: 1px solid var(--line);
+  border-right: 2px solid var(--line);
   padding: 0.7rem 1rem;
 }
 
@@ -328,7 +353,7 @@ h1 em {
 }
 
 .metric.highlight strong {
-  color: #07846d;
+  color: #5b21b6;
 }
 
 .bottom-bar button {
@@ -345,11 +370,13 @@ h1 em {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
+  transition: transform 150ms ease, background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
 }
 
 .bottom-bar button:hover:not(:disabled) {
   background: var(--accent);
   color: var(--foreground);
+  box-shadow: inset 0 0 0 2px var(--foreground);
 }
 
 .error-message {
@@ -366,6 +393,37 @@ h1 em {
   font-weight: 700;
 }
 
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-2px, -2px) scale(1.04);
+  }
+}
+
 @media (max-width: 820px) {
   .app-screen {
     grid-template-rows: 3.25rem minmax(0, 1fr) 9rem;
@@ -378,7 +436,7 @@ h1 em {
 
   .message {
     border-right: 0;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 2px solid var(--line);
     padding: 1.1rem 1rem 1rem;
   }
 
@@ -403,7 +461,7 @@ h1 em {
 
   .preview:first-child {
     border-right: 0;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 2px solid var(--line);
   }
 
   .preview {
@@ -438,7 +496,7 @@ h1 em {
   }
 
   .topbar p {
-    max-width: 13.5rem;
+    max-width: 12.5rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

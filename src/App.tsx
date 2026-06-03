@@ -67,7 +67,7 @@ export function App() {
       <header className="topbar">
         <div>
           <p>Transformador de imagenes</p>
-          <span>Apodaca / Calderon</span>
+          <span>Alejandro Apodaca m041852 / Gael Calderon m042449</span>
         </div>
         <button type="button" onClick={reset} disabled={!image}>
           Reiniciar
@@ -76,13 +76,14 @@ export function App() {
 
       <section className="hero">
         <div className="message">
-          <p className="eyebrow">Idea clave</p>
+          <p className="eyebrow">Idea clave / optimizacion</p>
           <h1>
             La misma imagen,
             <br />
             <em>{image ? `${savedPercent.toFixed(1)}%` : 'mucho'}</em> mas liviana.
           </h1>
-          <p className="plain-copy">Optimiza el peso antes de mandarla a un chat o sistema de IA.</p>
+          <p className="plain-copy">Misma imagen visual. Menos peso. Mejor para enviarla a un chat o sistema de IA.</p>
+          <p className="credits">Alejandro Apodaca m041852 / Gael Calderon m042449</p>
         </div>
 
         <label
