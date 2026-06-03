@@ -89,6 +89,7 @@ export function App() {
       <section className="hero">
         <div className="message">
           <p className="eyebrow">Proyecto final - Optimizador de imagenes</p>
+          <p className="mobile-credits">Alejandro Apodaca m041852 / Gael Calderon m042449</p>
           <h1>
             La misma imagen,
             <br />
