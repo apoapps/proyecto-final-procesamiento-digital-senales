@@ -8,7 +8,7 @@ const defaultOptions: ProcessingOptions = {
   maxDimension: 1280,
   grayscale: false,
   removeChroma: true,
-  compress: true,
+  compress: false,
   chromaFill: 'transparent',
   backgroundColor: '#ffffff'
 };
@@ -62,7 +62,10 @@ export function App() {
   }
 
   function updateFillMode(chromaFill: ProcessingOptions['chromaFill']) {
-    const nextOptions = { ...options, chromaFill, removeChroma: true };
+    const nextOptions: ProcessingOptions =
+      chromaFill === 'transparent'
+        ? { ...options, chromaFill, compress: false, removeChroma: true }
+        : { ...options, chromaFill, backgroundColor: options.backgroundColor ?? '#ffffff', removeChroma: true };
     setOptions(nextOptions);
     if (loadedFileRef.current) {
       void processFile(loadedFileRef.current, nextOptions);
@@ -70,7 +73,10 @@ export function App() {
   }
 
   function updateBooleanOption(key: 'removeChroma' | 'compress', value: boolean) {
-    const nextOptions = { ...options, [key]: value };
+    const nextOptions: ProcessingOptions =
+      key === 'compress' && value
+        ? { ...options, compress: true, chromaFill: 'color', backgroundColor: '#ffffff' }
+        : { ...options, [key]: value };
     setOptions(nextOptions);
     if (loadedFileRef.current) {
       void processFile(loadedFileRef.current, nextOptions);
@@ -139,7 +145,7 @@ export function App() {
             <br />
             <em>{heroValue}</em> estorbo.
           </h1>
-          <p className="plain-copy">Chroma quita el fondo. Si eliges transparencia, se guarda PNG sin compresion JPG; si eliges color, puede comprimirse.</p>
+          <p className="plain-copy">Chroma quita el fondo. Al comprimir, el fondo pasa a blanco para poder guardar JPG.</p>
           <p className="credits">Alejandro Apodaca m041852 / Gael Calderon m042449</p>
         </div>
 
@@ -167,7 +173,7 @@ export function App() {
             <div className="empty-upload">
               <div className="upload-icon">{isProcessing ? <Loader2 className="h-7 w-7 animate-spin" /> : <Upload className="h-7 w-7" />}</div>
               <strong>{isDragActive ? 'Suelta la imagen' : 'Sube una imagen'}</strong>
-              <span>La pagina detecta el color de chroma. Puedes dejar transparencia o poner un color solido.</span>
+              <span>La pagina detecta el color de chroma. Transparente usa PNG; comprimir usa fondo blanco.</span>
             </div>
           ) : (
             <div className="compare">

@@ -14,7 +14,7 @@ Rúbricas revisadas:
 
 ## Concepto final
 
-La interfaz final comunica una idea simple: **fondo limpio y archivo optimizado**, con dos decisiones separadas: chroma y comprimir. Dentro de chroma, el usuario decide si conserva transparencia PNG o reemplaza el fondo por color para poder comprimir como JPG.
+La interfaz final comunica una idea simple: **fondo limpio y archivo optimizado**, con dos decisiones separadas: chroma y comprimir. Dentro de chroma, el usuario decide si conserva transparencia PNG o reemplaza el fondo por color. Al activar comprimir, la app normaliza la salida a fondo blanco para poder guardar JPG.
 
 La app no muestra todos los indicadores técnicos para no confundir al usuario. El reporte conserva la explicación de DSP, chroma key, MSE, PSNR, base64 y limitaciones para cumplir la rúbrica.
 

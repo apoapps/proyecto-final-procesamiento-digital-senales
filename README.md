@@ -5,9 +5,9 @@ Prototipo web para limpiar y optimizar imágenes antes de subirlas a una aplicac
 La interfaz separa dos decisiones:
 
 - `Chroma`: activa o desactiva la limpieza de fondo. En el mismo bloque se elige si la salida queda transparente o con color sólido.
-- `Comprimir`: activa o desactiva el remuestreo/codificación para ahorrar espacio.
+- `Comprimir`: activa o desactiva el remuestreo/codificación para ahorrar espacio. Al activarlo, la salida cambia a fondo blanco porque JPG no puede guardar transparencia.
 
-Si la salida conserva transparencia, la app guarda PNG y no muestra la métrica de compresión JPG. Si se elige color sólido y `Comprimir` está activo, la salida puede guardarse como JPG y mostrar `Ahorro de espacio`. Si la salida no ahorra espacio y tampoco aplica chroma, la app no ofrece descarga para evitar generar un archivo redundante.
+Si la salida conserva transparencia, la app guarda PNG, apaga la compresión JPG y no muestra la métrica de ahorro. Si se activa `Comprimir`, la app usa fondo blanco de forma idempotente: volver a activarlo deja el mismo estado estable. Si la salida no ahorra espacio y tampoco aplica chroma, la app no ofrece descarga para evitar generar un archivo redundante.
 
 ## Integrantes
 
