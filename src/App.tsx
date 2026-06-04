@@ -8,7 +8,9 @@ const defaultOptions: ProcessingOptions = {
   maxDimension: 1280,
   grayscale: false,
   removeChroma: true,
-  compress: true
+  compress: true,
+  chromaFill: 'transparent',
+  backgroundColor: '#ffffff'
 };
 
 export function App() {
@@ -51,8 +53,16 @@ export function App() {
     void processFile(file, defaultOptions);
   }
 
-  function updateChromaColor(color: string) {
-    const nextOptions = { ...options, chromaColor: color, removeChroma: true };
+  function updatePickerColor(color: string) {
+    const nextOptions = options.chromaFill === 'color' ? { ...options, backgroundColor: color, removeChroma: true } : { ...options, chromaColor: color, removeChroma: true };
+    setOptions(nextOptions);
+    if (loadedFileRef.current) {
+      void processFile(loadedFileRef.current, nextOptions);
+    }
+  }
+
+  function updateFillMode(chromaFill: ProcessingOptions['chromaFill']) {
+    const nextOptions = { ...options, chromaFill, removeChroma: true };
     setOptions(nextOptions);
     if (loadedFileRef.current) {
       void processFile(loadedFileRef.current, nextOptions);
@@ -91,9 +101,10 @@ export function App() {
   const original = image ? formatBytes(image.metrics.originalBytes) : '0 B';
   const compressed = image ? formatBytes(image.metrics.compressedBytes) : '0 B';
   const hasUsefulOutput = Boolean(image && (image.metrics.savedBytes > 0 || image.chroma.applied));
-  const showSavings = options.compress && Boolean(image);
-  const outputLabel = image?.chroma.applied ? 'Sin fondo' : image && image.metrics.savedBytes > 0 ? 'Comprimida' : 'Sin cambio';
-  const heroValue = image && options.compress ? `${savedPercent.toFixed(1)}%` : 'sin';
+  const keepsTransparency = Boolean(image?.chroma.applied && options.chromaFill === 'transparent');
+  const showSavings = options.compress && Boolean(image) && !keepsTransparency;
+  const outputLabel = keepsTransparency ? 'Transparente' : image?.chroma.applied ? 'Fondo color' : image && image.metrics.savedBytes > 0 ? 'Comprimida' : 'Sin cambio';
+  const heroValue = image && showSavings ? `${savedPercent.toFixed(1)}%` : 'sin';
 
   return (
     <main className="app-screen">
@@ -128,7 +139,7 @@ export function App() {
             <br />
             <em>{heroValue}</em> estorbo.
           </h1>
-          <p className="plain-copy">Dos controles: chroma para quitar fondo y comprimir para ahorrar espacio. Si nada cambia, no genera una descarga repetida.</p>
+          <p className="plain-copy">Chroma quita el fondo. Si eliges transparencia, se guarda PNG sin compresion JPG; si eliges color, puede comprimirse.</p>
           <p className="credits">Alejandro Apodaca m041852 / Gael Calderon m042449</p>
         </div>
 
@@ -156,7 +167,7 @@ export function App() {
             <div className="empty-upload">
               <div className="upload-icon">{isProcessing ? <Loader2 className="h-7 w-7 animate-spin" /> : <Upload className="h-7 w-7" />}</div>
               <strong>{isDragActive ? 'Suelta la imagen' : 'Sube una imagen'}</strong>
-              <span>La pagina detecta el color de chroma y puede comprimir la imagen para ahorrar espacio.</span>
+              <span>La pagina detecta el color de chroma. Puedes dejar transparencia o poner un color solido.</span>
             </div>
           ) : (
             <div className="compare">
@@ -176,14 +187,29 @@ export function App() {
             <ToggleButton active={options.removeChroma} disabled={!image || isProcessing} onClick={() => updateBooleanOption('removeChroma', !options.removeChroma)} label="Chroma" />
             <ToggleButton active={options.compress} disabled={!image || isProcessing} onClick={() => updateBooleanOption('compress', !options.compress)} label="Comprimir" />
           </div>
-          <label className="color-field">
-            <span>
-              <Droplet className="h-4 w-4" />
-              Chroma
-            </span>
-            <input type="color" value={options.chromaColor ?? '#00ff00'} onChange={(event) => updateChromaColor(event.target.value)} disabled={!image || isProcessing || !options.removeChroma} />
-            <strong>{image?.chroma.detected ? image.chroma.color.toUpperCase() : 'No detectado'}</strong>
-          </label>
+          <div className="color-field">
+            <div className="fill-toggle" aria-label="Salida del chroma">
+              <button type="button" className={options.chromaFill === 'transparent' ? 'active' : ''} onClick={() => updateFillMode('transparent')} disabled={!image || isProcessing || !options.removeChroma}>
+                Transp.
+              </button>
+              <button type="button" className={options.chromaFill === 'color' ? 'active' : ''} onClick={() => updateFillMode('color')} disabled={!image || isProcessing || !options.removeChroma}>
+                Color
+              </button>
+            </div>
+            <label className="picker-field">
+              <span>
+                <Droplet className="h-4 w-4" />
+                {options.chromaFill === 'color' ? 'Fondo' : 'Chroma'}
+              </span>
+              <input
+                type="color"
+                value={options.chromaFill === 'color' ? options.backgroundColor ?? '#ffffff' : options.chromaColor ?? '#00ff00'}
+                onChange={(event) => updatePickerColor(event.target.value)}
+                disabled={!image || isProcessing || !options.removeChroma}
+              />
+              <strong>{options.chromaFill === 'color' ? (options.backgroundColor ?? '#ffffff').toUpperCase() : image?.chroma.detected ? image.chroma.color.toUpperCase() : 'No detectado'}</strong>
+            </label>
+          </div>
         </div>
         <button type="button" onClick={downloadImage} disabled={!hasUsefulOutput}>
           <Download className="h-4 w-4" />

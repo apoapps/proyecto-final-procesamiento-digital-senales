@@ -6,7 +6,9 @@ export type ProcessingOptions = {
   grayscale: boolean;
   removeChroma: boolean;
   compress: boolean;
+  chromaFill: 'transparent' | 'color';
   chromaColor?: string;
+  backgroundColor?: string;
 };
 
 export type ProcessedImage = {
@@ -45,7 +47,8 @@ type LoadedBitmap = {
 export async function processImageFile(file: File, options: ProcessingOptions): Promise<ProcessedImage> {
   const sourceUrl = URL.createObjectURL(file);
   const loaded = await loadBitmap(file);
-  const dimensions = options.compress ? fitWithin(loaded.width, loaded.height, options.maxDimension) : { width: loaded.width, height: loaded.height };
+  const keepsTransparency = options.removeChroma && options.chromaFill === 'transparent';
+  const dimensions = options.compress && !keepsTransparency ? fitWithin(loaded.width, loaded.height, options.maxDimension) : { width: loaded.width, height: loaded.height };
   const workingCanvas = document.createElement('canvas');
   workingCanvas.width = dimensions.width;
   workingCanvas.height = dimensions.height;
@@ -157,15 +160,30 @@ function transformChromaIfPresent(context: CanvasRenderingContext2D, width: numb
     };
   }
 
+  const background = options.chromaFill === 'color' ? hexToRgb(options.backgroundColor ?? '#ffffff') ?? { r: 255, g: 255, b: 255 } : null;
   let removedPixels = 0;
   for (let index = 0; index < pixels.length; index += 4) {
     const distance = colorDistance(pixels[index], pixels[index + 1], pixels[index + 2], chroma.r, chroma.g, chroma.b);
     if (distance < 58) {
-      pixels[index + 3] = 0;
+      if (background) {
+        pixels[index] = background.r;
+        pixels[index + 1] = background.g;
+        pixels[index + 2] = background.b;
+        pixels[index + 3] = 255;
+      } else {
+        pixels[index + 3] = 0;
+      }
       removedPixels += 1;
     } else if (distance < 92) {
       const keep = (distance - 58) / 34;
-      pixels[index + 3] = Math.min(pixels[index + 3], Math.round(keep * 255));
+      if (background) {
+        pixels[index] = Math.round(pixels[index] * keep + background.r * (1 - keep));
+        pixels[index + 1] = Math.round(pixels[index + 1] * keep + background.g * (1 - keep));
+        pixels[index + 2] = Math.round(pixels[index + 2] * keep + background.b * (1 - keep));
+        pixels[index + 3] = 255;
+      } else {
+        pixels[index + 3] = Math.min(pixels[index + 3], Math.round(keep * 255));
+      }
     }
   }
 
@@ -186,7 +204,7 @@ function transformChromaIfPresent(context: CanvasRenderingContext2D, width: numb
 
 function chooseOutputType(file: File, options: ProcessingOptions, chroma: ChromaResult) {
   if (!options.compress && !chroma.applied) return 'source/original';
-  if (chroma.applied) return 'image/png';
+  if (chroma.applied && options.chromaFill === 'transparent') return 'image/png';
   return options.compress ? 'image/jpeg' : 'image/png';
 }
 

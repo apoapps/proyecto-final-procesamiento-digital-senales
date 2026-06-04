@@ -1,13 +1,13 @@
 # Proyecto Final PDS: Image Context Transformer
 
-Prototipo web para limpiar y optimizar imágenes antes de subirlas a una aplicación de chat LLM. El procesamiento se ejecuta localmente en el navegador mediante técnicas de DSP: detección de chroma por color dominante, eliminación de fondo transparente, remuestreo espacial, cuantización perceptual, codificación PNG/JPEG y medición de error con MSE/PSNR.
+Prototipo web para limpiar y optimizar imágenes antes de subirlas a una aplicación de chat LLM. El procesamiento se ejecuta localmente en el navegador mediante técnicas de DSP: detección de chroma por color dominante, eliminación de fondo, remuestreo espacial, cuantización perceptual, codificación PNG/JPEG y medición de error con MSE/PSNR.
 
 La interfaz separa dos decisiones:
 
-- `Chroma`: activa o desactiva la limpieza de fondo transparente y permite ajustar el color detectado.
+- `Chroma`: activa o desactiva la limpieza de fondo. En el mismo bloque se elige si la salida queda transparente o con color sólido.
 - `Comprimir`: activa o desactiva el remuestreo/codificación para ahorrar espacio.
 
-Si la salida no ahorra espacio y tampoco aplica chroma, la app no ofrece descarga para evitar generar un archivo redundante. Si `Comprimir` esta apagado, la métrica de ahorro desaparece.
+Si la salida conserva transparencia, la app guarda PNG y no muestra la métrica de compresión JPG. Si se elige color sólido y `Comprimir` está activo, la salida puede guardarse como JPG y mostrar `Ahorro de espacio`. Si la salida no ahorra espacio y tampoco aplica chroma, la app no ofrece descarga para evitar generar un archivo redundante.
 
 ## Integrantes
 

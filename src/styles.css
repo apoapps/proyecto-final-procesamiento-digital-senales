@@ -451,13 +451,49 @@ h1 em {
 .color-field {
   display: grid;
   min-width: 0;
+  grid-template-columns: minmax(6.4rem, 0.78fr) minmax(7.8rem, 1fr);
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.fill-toggle {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 2px solid var(--foreground);
+}
+
+.fill-toggle button {
+  min-width: 0;
+  height: 2.1rem;
+  border: 0;
+  background: var(--background);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.fill-toggle button + button {
+  border-left: 2px solid var(--foreground);
+}
+
+.fill-toggle button.active {
+  background: var(--accent);
+}
+
+.picker-field {
+  display: grid;
+  min-width: 0;
   grid-template-columns: auto 2.1rem minmax(0, 1fr);
   align-items: center;
   gap: 0.5rem;
 }
 
-.color-field span,
-.color-field strong {
+.picker-field span,
+.picker-field strong {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 0.54rem;
   font-weight: 700;
@@ -465,7 +501,7 @@ h1 em {
   text-transform: uppercase;
 }
 
-.color-field span {
+.picker-field span {
   display: inline-flex;
   min-width: 0;
   align-items: center;
@@ -476,14 +512,14 @@ h1 em {
   white-space: nowrap;
 }
 
-.color-field strong {
+.picker-field strong {
   overflow: hidden;
   color: var(--foreground);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.color-field input {
+.picker-field input {
   width: 2.1rem;
   height: 2.1rem;
   border: 2px solid var(--foreground);
@@ -492,16 +528,16 @@ h1 em {
   cursor: pointer;
 }
 
-.color-field input:disabled {
+.picker-field input:disabled {
   cursor: not-allowed;
   opacity: 0.35;
 }
 
-.color-field input::-webkit-color-swatch-wrapper {
+.picker-field input::-webkit-color-swatch-wrapper {
   padding: 0;
 }
 
-.color-field input::-webkit-color-swatch {
+.picker-field input::-webkit-color-swatch {
   border: 0;
 }
 
@@ -739,8 +775,8 @@ h1 em {
     font-size: 0.98rem;
   }
 
-  .color-field span,
-  .color-field strong {
+  .picker-field span,
+  .picker-field strong {
     font-size: 0.56rem;
     letter-spacing: 0.08em;
   }
@@ -843,20 +879,30 @@ h1 em {
   }
 
   .color-field {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
+    gap: 0.34rem;
+  }
+
+  .fill-toggle button {
+    height: 1.75rem;
+    font-size: 0.46rem;
+  }
+
+  .picker-field {
     grid-template-columns: 1.75rem minmax(0, 1fr);
     gap: 0.34rem;
   }
 
-  .color-field span {
+  .picker-field span {
     display: none;
   }
 
-  .color-field input {
+  .picker-field input {
     width: 1.75rem;
     height: 1.75rem;
   }
 
-  .color-field strong {
+  .picker-field strong {
     font-size: 0.5rem;
   }
 }
